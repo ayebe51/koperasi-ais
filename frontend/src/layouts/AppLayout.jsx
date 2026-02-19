@@ -15,6 +15,7 @@ import './AppLayout.css';
 
 const menuItems = [
   { to: '/',                  icon: LayoutDashboard, label: 'Dashboard',             roles: null },
+  { to: '/portal',             icon: Wallet,          label: 'Portal Saya',           roles: ['MEMBER'] },
   { to: '/profil',             icon: UserCircle,      label: 'Akun Saya',             roles: null },
   { to: '/anggota',           icon: Users,           label: 'Keanggotaan',           roles: ['ADMIN','MANAGER','TELLER'] },
   { to: '/simpanan',          icon: Wallet,          label: 'Simpanan',              roles: ['ADMIN','MANAGER','TELLER'] },

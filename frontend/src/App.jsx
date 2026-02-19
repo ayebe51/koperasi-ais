@@ -27,6 +27,7 @@ import UserManagementPage from './pages/UserPage/UserManagementPage';
 import SettingsPage from './pages/SettingsPage/SettingsPage';
 import ActivityLogPage from './pages/ActivityLogPage/ActivityLogPage';
 import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
+import MemberPortalPage from './pages/PortalPage/MemberPortalPage';
 
 function AuthRedirect({ children }) {
   const { isAuthenticated } = useAuth();
@@ -52,6 +53,7 @@ export default function App() {
 
             {/* Profil / Portal Anggota — All authenticated */}
             <Route path="profil" element={<ProfilPage />} />
+            <Route path="portal" element={<MemberPortalPage />} />
 
             {/* Keanggotaan — ADMIN, MANAGER, TELLER */}
             <Route path="anggota" element={<ProtectedRoute roles={['ADMIN','MANAGER','TELLER']}><AnggotaListPage /></ProtectedRoute>} />

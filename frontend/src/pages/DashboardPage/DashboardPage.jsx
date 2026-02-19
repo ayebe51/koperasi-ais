@@ -146,17 +146,24 @@ export default function DashboardPage() {
           <div className="stat-icon"><Landmark size={22} /></div>
           <div className="stat-value">{formatRupiah(stats.pinjaman.outstanding)}</div>
           <div className="stat-label">Outstanding Pinjaman</div>
-          {stats.pinjaman.pending > 0 && (
-            <div className="stat-trend warn">
-              <AlertTriangle size={14} /> {stats.pinjaman.pending} pending
-            </div>
-          )}
+          <div className="stat-badges">
+            {stats.pinjaman.pending > 0 && (
+              <span className="stat-trend warn">
+                <AlertTriangle size={14} /> {stats.pinjaman.pending} pending
+              </span>
+            )}
+            {stats.angsuran?.overdue_count > 0 && (
+              <span className="stat-trend warn" title="NPL — angsuran lewat jatuh tempo">
+                <TrendingDown size={14} /> NPL: {stats.angsuran.overdue_count}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="stat-card green">
           <div className="stat-icon"><Store size={22} /></div>
-          <div className="stat-value">{formatNumber(stats.toko.total_produk)}</div>
-          <div className="stat-label">Produk Toko</div>
+          <div className="stat-value">{formatRupiah(stats.toko.penjualan_bulan_ini)}</div>
+          <div className="stat-label">Penjualan Bulan Ini</div>
           {stats.toko.stok_rendah > 0 && (
             <div className="stat-trend warn">
               <AlertTriangle size={14} /> {stats.toko.stok_rendah} stok rendah

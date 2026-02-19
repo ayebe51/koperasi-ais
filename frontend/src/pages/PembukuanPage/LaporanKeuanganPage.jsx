@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah } from '../../lib/utils';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Printer } from 'lucide-react';
 import './LaporanPage.css';
 
 export default function LaporanKeuanganPage() {
@@ -55,6 +55,11 @@ export default function LaporanKeuanganPage() {
           <h1 className="page-title">Laporan Keuangan</h1>
           <p className="page-subtitle">Neraca, Laba Rugi, dan Arus Kas</p>
         </div>
+        {report && (
+          <button className="btn btn-secondary no-print" onClick={() => window.print()}>
+            <Printer size={16} /> Cetak
+          </button>
+        )}
       </div>
 
       {/* Report selector */}

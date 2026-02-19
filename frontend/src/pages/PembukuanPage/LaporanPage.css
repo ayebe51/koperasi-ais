@@ -45,3 +45,41 @@
   padding-top: var(--space-md);
   font-size: 0.95rem;
 }
+
+/* ═══════════ Print Styles ═══════════ */
+.no-print { display: inline-flex; }
+
+@media print {
+  /* Hide non-essential UI */
+  .sidebar, .top-bar, .toolbar, .no-print,
+  .report-tabs, .page-subtitle, .sidebar-overlay {
+    display: none !important;
+  }
+
+  /* Reset layout */
+  .app-layout { display: block !important; }
+  .main-content, .content-area { padding: 0 !important; margin: 0 !important; }
+  .page { padding: 0 !important; }
+
+  /* White background */
+  body, .page, .card, .report-card {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Ensure text is dark */
+  .report-section-title { color: #111 !important; }
+  .report-row { border-color: #ddd !important; }
+  .report-row.report-total { border-color: #333 !important; }
+  .report-header-info { border-color: #333 !important; }
+  .font-mono, .text-muted { color: #333 !important; }
+
+  /* Page breaks */
+  .report-section { break-inside: avoid; }
+  .report-card { min-height: auto !important; break-inside: avoid; }
+
+  /* Print header */
+  .page-title { font-size: 1.2rem !important; margin-bottom: 0.5rem !important; }
+}

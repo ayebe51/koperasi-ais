@@ -1,0 +1,159 @@
+.portal-page {
+  max-width: 900px;
+}
+
+/* Header */
+.portal-header {
+  margin-bottom: var(--space-lg);
+}
+
+.portal-member-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.portal-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-500), var(--accent-500, #8b5cf6));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.portal-name {
+  font-size: 1.4rem;
+  margin: 0;
+}
+
+/* Tabs */
+.portal-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--space-xs);
+}
+
+.portal-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.portal-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.portal-tab.active {
+  color: var(--primary-400);
+  border-bottom-color: var(--primary-400);
+  font-weight: 600;
+}
+
+/* Savings cards */
+.portal-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-md);
+}
+
+.portal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal-card-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.portal-card-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.savings-total {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 56,189,248), 0.08), rgba(var(--primary-rgb, 56,189,248), 0.02));
+  border-color: var(--primary-500);
+}
+
+.savings-total .portal-card-value {
+  color: var(--primary-400);
+  font-size: 1.3rem;
+}
+
+/* Loan cards */
+.portal-loans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.portal-loan-card {
+  padding: var(--space-lg);
+}
+
+.portal-loan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.portal-loan-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.portal-loan-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Schedule details */
+.portal-schedule-details {
+  margin-top: var(--space-sm);
+}
+
+.portal-schedule-details summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--primary-400);
+  font-weight: 500;
+}
+
+.portal-schedule-details summary:hover {
+  text-decoration: underline;
+}
