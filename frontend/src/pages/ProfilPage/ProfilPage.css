@@ -1,0 +1,153 @@
+/* ─── Portal Anggota / Profil ─── */
+.portal-welcome {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-xl);
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-400));
+    border-radius: var(--radius-lg);
+    color: #fff;
+    margin-bottom: var(--space-lg);
+}
+.portal-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.portal-info h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.35rem;
+}
+.portal-info p {
+    margin: 0;
+    opacity: 0.85;
+    font-size: 0.9rem;
+}
+
+/* Savings summary cards */
+.savings-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+.saving-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+}
+.saving-card .label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: var(--space-xs);
+}
+.saving-card .amount {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+.saving-card.total {
+    background: linear-gradient(135deg, var(--primary-600), var(--primary-400));
+    border-color: transparent;
+}
+.saving-card.total .label,
+.saving-card.total .amount {
+    color: #fff;
+}
+
+/* Loan card */
+.loan-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-md);
+}
+.loan-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+.loan-card-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+.loan-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+.loan-detail-item .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.loan-detail-item .value {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+/* Schedule toggle */
+.schedule-toggle {
+    cursor: pointer;
+    color: var(--primary-500);
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: none;
+    border: none;
+    padding: 0;
+}
+.schedule-toggle:hover {
+    text-decoration: underline;
+}
+
+/* Section headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+.section-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .savings-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 640px) {
+    .savings-cards {
+        grid-template-columns: 1fr;
+    }
+    .portal-welcome {
+        flex-direction: column;
+        text-align: center;
+        padding: var(--space-lg);
+    }
+    .loan-detail-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

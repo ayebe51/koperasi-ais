@@ -1,0 +1,47 @@
+/* ═══════════ Laporan Page ═══════════ */
+
+.report-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  background: var(--bg-elevated);
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+
+.report-card { min-height: 400px; }
+
+.report-header-info {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 2px solid var(--border-color);
+}
+.report-header-info h3 { text-transform: uppercase; letter-spacing: 0.05em; }
+
+.report-section { margin-bottom: var(--space-xl); }
+.report-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-400);
+  margin-bottom: var(--space-md);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.report-rows { display: flex; flex-direction: column; }
+.report-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+}
+.report-row:last-child { border-bottom: none; }
+.report-row-label { display: flex; gap: var(--space-md); }
+.report-row.report-total {
+  border-top: 2px solid var(--border-light);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-md);
+  font-size: 0.95rem;
+}

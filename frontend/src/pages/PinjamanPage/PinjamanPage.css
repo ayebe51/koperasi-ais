@@ -1,0 +1,31 @@
+/* ═══════════ Pinjaman Page ═══════════ */
+
+.loan-detail-grid { align-items: start; }
+
+.progress-circle-wrap { margin-bottom: var(--space-sm); }
+
+.progress-bar-container {
+  height: 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-sm);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.6s ease;
+  min-width: 2px;
+}
+
+.progress-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-400);
+}
+
+@media (max-width: 768px) {
+  .loan-detail-grid { grid-template-columns: 1fr; }
+}

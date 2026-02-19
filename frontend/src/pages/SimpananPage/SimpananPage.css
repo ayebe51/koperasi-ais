@@ -1,0 +1,29 @@
+/* ═══════════ Simpanan Page ═══════════ */
+
+.savings-summary { margin-bottom: var(--space-lg); }
+
+.member-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-top: 4px;
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+}
+
+.member-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  font-size: 0.875rem;
+}
+.member-dropdown-item:hover { background: var(--bg-hover); }

@@ -1,0 +1,117 @@
+/* ═══════════ Login Page ═══════════ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: var(--space-lg);
+}
+
+/* Background shapes */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.bg-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+}
+.shape-1 {
+  width: 500px; height: 500px;
+  background: var(--primary-500);
+  top: -150px; right: -100px;
+  animation: float 8s ease-in-out infinite;
+}
+.shape-2 {
+  width: 350px; height: 350px;
+  background: #8b5cf6;
+  bottom: -100px; left: -80px;
+  animation: float 10s ease-in-out infinite reverse;
+}
+.shape-3 {
+  width: 250px; height: 250px;
+  background: #f59e0b;
+  top: 40%; left: 50%;
+  animation: float 12s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, -30px); }
+}
+
+/* Card */
+.login-card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+  animation: slideUp var(--transition-slow);
+  box-shadow: var(--shadow-lg);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.login-logo {
+  width: 56px; height: 56px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin: 0 auto var(--space-md);
+  box-shadow: var(--shadow-glow);
+}
+
+.login-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.login-form { margin-bottom: var(--space-lg); }
+
+.password-wrapper {
+  position: relative;
+}
+.pw-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+}
+.pw-toggle:hover { color: var(--text-primary); }
+
+.btn-login {
+  width: 100%;
+  justify-content: center;
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  margin-top: var(--space-sm);
+}
+
+.login-footer {
+  text-align: center;
+}

@@ -1,0 +1,29 @@
+/* ═══════════ Anggota Page ═══════════ */
+
+.member-detail-grid {
+  align-items: start;
+}
+
+.member-profile-card .profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--gradient-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .member-detail-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,22 @@
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover) 50%, var(--bg-elevated) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-text { height: 0.9rem; margin-bottom: 0.5rem; }
+.skeleton-text:last-child { width: 60%; }
+.skeleton-title { height: 1.4rem; width: 40%; margin-bottom: 0.75rem; }
+.skeleton-card { border-radius: var(--radius-md); height: 120px; }
+.skeleton-row { height: 3rem; margin-bottom: 0.25rem; border-radius: var(--radius-sm); }
+.skeleton-circle { border-radius: 50%; }
+
+/* Stat card skeleton */
+.skeleton-stat { display: flex; flex-direction: column; gap: 0.5rem; padding: 1.5rem; border-radius: var(--radius-md); background: var(--bg-card); border: 1px solid var(--border-color); }
+.skeleton-stat .skeleton-icon { width: 44px; height: 44px; border-radius: var(--radius-md); }
+.skeleton-stat .skeleton-value { height: 1.8rem; width: 60%; }
+.skeleton-stat .skeleton-label { height: 0.8rem; width: 45%; }
