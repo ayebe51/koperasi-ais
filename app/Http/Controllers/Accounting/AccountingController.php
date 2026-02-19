@@ -178,11 +178,15 @@ class AccountingController extends Controller
      */
     public function ledger(Request $request, string $accountCode): JsonResponse
     {
-        return $this->success($this->journalService->getLedger(
-            $accountCode,
-            $request->start_date,
-            $request->end_date
-        ));
+        try {
+            return $this->success($this->journalService->getLedger(
+                $accountCode,
+                $request->start_date,
+                $request->end_date
+            ));
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
+        }
     }
 
     /**

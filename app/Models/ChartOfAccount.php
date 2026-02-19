@@ -26,9 +26,6 @@ class ChartOfAccount extends Model
     protected function casts(): array
     {
         return [
-            'category' => AccountCategory::class,
-            'normal_balance' => BalanceType::class,
-            'report_section' => ReportSection::class,
             'is_cooperative_specific' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -62,7 +59,7 @@ class ChartOfAccount extends Model
             ->whereHas('journalEntry', fn($q) => $q->where('is_posted', true))
             ->sum('credit');
 
-        if ($this->normal_balance === BalanceType::DEBIT) {
+        if (strtoupper($this->normal_balance) === 'DEBIT') {
             return $debits - $credits;
         }
 

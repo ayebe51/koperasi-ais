@@ -92,7 +92,7 @@ class ReportService
         $cashLines = JournalLine::where('account_id', $cashAccount->id)
             ->whereHas('journalEntry', function ($q) use ($startDate, $endDate) {
                 $q->where('is_posted', true)
-                    ->whereBetween('transaction_date', [$startDate, $endDate]);
+                    ->whereBetween('entry_date', [$startDate, $endDate]);
             })
             ->with('journalEntry')
             ->get();
@@ -116,20 +116,20 @@ class ReportService
 
         foreach ($accounts as $account) {
             $debits = (float) JournalLine::where('account_id', $account->id)
-                ->whereHas('journalEntry', fn($q) => $q->where('is_posted', true)->where('transaction_date', '<=', $asOfDate))
+                ->whereHas('journalEntry', fn($q) => $q->where('is_posted', true)->where('entry_date', '<=', $asOfDate))
                 ->sum('debit');
 
             $credits = (float) JournalLine::where('account_id', $account->id)
-                ->whereHas('journalEntry', fn($q) => $q->where('is_posted', true)->where('transaction_date', '<=', $asOfDate))
+                ->whereHas('journalEntry', fn($q) => $q->where('is_posted', true)->where('entry_date', '<=', $asOfDate))
                 ->sum('credit');
 
-            $balance = $account->normal_balance->value === 'DEBIT' ? ($debits - $credits) : ($credits - $debits);
+            $balance = strtoupper($account->normal_balance) === 'DEBIT' ? ($debits - $credits) : ($credits - $debits);
 
             if (abs($balance) > 0.01) {
                 $result[] = [
                     'code' => $account->code,
                     'name' => $account->name,
-                    'category' => $account->category->value,
+                    'category' => strtoupper($account->category),
                     'balance' => round($balance, 2),
                 ];
             }
@@ -141,7 +141,7 @@ class ReportService
     private function getAccountBalancesPeriod(string $startDate, string $endDate): array
     {
         $accounts = ChartOfAccount::where('is_active', true)
-            ->whereIn('category', [AccountCategory::REVENUE, AccountCategory::EXPENSE])
+            ->whereIn('category', ['REVENUE', 'EXPENSE'])
             ->orderBy('code')
             ->get();
 
@@ -150,21 +150,21 @@ class ReportService
         foreach ($accounts as $account) {
             $debits = (float) JournalLine::where('account_id', $account->id)
                 ->whereHas('journalEntry', fn($q) =>
-                    $q->where('is_posted', true)->whereBetween('transaction_date', [$startDate, $endDate]))
+                    $q->where('is_posted', true)->whereBetween('entry_date', [$startDate, $endDate]))
                 ->sum('debit');
 
             $credits = (float) JournalLine::where('account_id', $account->id)
                 ->whereHas('journalEntry', fn($q) =>
-                    $q->where('is_posted', true)->whereBetween('transaction_date', [$startDate, $endDate]))
+                    $q->where('is_posted', true)->whereBetween('entry_date', [$startDate, $endDate]))
                 ->sum('credit');
 
-            $balance = $account->normal_balance->value === 'DEBIT' ? ($debits - $credits) : ($credits - $debits);
+            $balance = strtoupper($account->normal_balance) === 'DEBIT' ? ($debits - $credits) : ($credits - $debits);
 
             if (abs($balance) > 0.01) {
                 $result[] = [
                     'code' => $account->code,
                     'name' => $account->name,
-                    'category' => $account->category->value,
+                    'category' => strtoupper($account->category),
                     'balance' => round($balance, 2),
                 ];
             }

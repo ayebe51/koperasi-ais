@@ -146,8 +146,11 @@ class JournalService
         $lines = $query->get();
         $runningBalance = 0;
 
-        $ledger = $lines->map(function ($line) use ($account, &$runningBalance) {
-            $isDebitNormal = $account->normal_balance->value === 'DEBIT';
+        // Use raw DB value to avoid enum cast crash
+        $rawNormalBalance = strtoupper($account->getRawOriginal('normal_balance') ?? 'DEBIT');
+
+        $ledger = $lines->map(function ($line) use ($rawNormalBalance, &$runningBalance) {
+            $isDebitNormal = $rawNormalBalance === 'DEBIT';
             $runningBalance += $isDebitNormal
                 ? ((float) $line->debit - (float) $line->credit)
                 : ((float) $line->credit - (float) $line->debit);
@@ -202,7 +205,7 @@ class JournalService
             $row = [
                 'code' => $account->code,
                 'name' => $account->name,
-                'category' => $account->category->value,
+                'category' => strtoupper($account->category),
                 'debit_balance' => $balance > 0 ? round($balance, 2) : 0,
                 'credit_balance' => $balance < 0 ? round(abs($balance), 2) : 0,
             ];
