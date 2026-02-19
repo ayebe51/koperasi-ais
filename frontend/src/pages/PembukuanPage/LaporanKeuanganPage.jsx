@@ -55,11 +55,9 @@ export default function LaporanKeuanganPage() {
           <h1 className="page-title">Laporan Keuangan</h1>
           <p className="page-subtitle">Neraca, Laba Rugi, dan Arus Kas</p>
         </div>
-        {report && (
-          <button className="btn btn-secondary no-print" onClick={() => window.print()}>
-            <Printer size={16} /> Cetak
-          </button>
-        )}
+        <button className="btn btn-secondary no-print" disabled={!report} onClick={() => window.print()}>
+          <Printer size={16} /> Cetak
+        </button>
       </div>
 
       {/* Report selector */}

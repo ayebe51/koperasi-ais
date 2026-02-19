@@ -11,6 +11,7 @@ import {
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
 import GlobalSearch from '../components/GlobalSearch/GlobalSearch';
 import ShortcutsModal from '../components/ShortcutsModal/ShortcutsModal';
+import NotificationBell from '../components/NotificationBell/NotificationBell';
 import './AppLayout.css';
 
 const menuItems = [
@@ -249,6 +250,7 @@ export default function AppLayout() {
               style={{ color: 'var(--text-secondary)' }}>
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
+            <NotificationBell />
             <div className="user-info" onClick={openProfileModal} style={{ cursor: 'pointer' }} title="Edit Profil">
               <div className="user-avatar">{user?.name?.charAt(0) || 'U'}</div>
               <div className="user-meta">
