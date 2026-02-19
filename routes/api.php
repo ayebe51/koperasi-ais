@@ -90,6 +90,8 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('role:ADMIN,MANAGER,ACCOUNTANT');
         Route::post('/coa', [AccountingController::class, 'coaStore'])
             ->middleware('role:ADMIN,ACCOUNTANT');
+        Route::delete('/coa/{id}', [AccountingController::class, 'coaDestroy'])
+            ->middleware('role:ADMIN,ACCOUNTANT');
 
         // Journals
         Route::get('/journals', [AccountingController::class, 'journalIndex'])

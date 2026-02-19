@@ -58,6 +58,26 @@ class AccountingController extends Controller
         return $this->created($account, 'Akun berhasil ditambahkan');
     }
 
+    /**
+     * DELETE /api/accounting/coa/{id}
+     * Only accounts with no journal lines can be deleted.
+     */
+    public function coaDestroy(string $id): JsonResponse
+    {
+        $account = ChartOfAccount::findOrFail($id);
+
+        if ($account->journalLines()->exists()) {
+            return $this->error('Akun ini sudah digunakan dalam jurnal dan tidak bisa dihapus.', 422);
+        }
+
+        if ($account->children()->exists()) {
+            return $this->error('Hapus akun anak terlebih dahulu sebelum menghapus akun induk.', 422);
+        }
+
+        $account->delete();
+        return $this->success(null, 'Akun berhasil dihapus');
+    }
+
     // ═══════════ JOURNAL ENTRIES ═══════════
 
     /**

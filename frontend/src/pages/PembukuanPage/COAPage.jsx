@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { BookOpen, Plus, Search, Eye } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
+import { BookOpen, Plus, Search, Eye, Trash2 } from 'lucide-react';
 import COAFormModal from './COAFormModal';
 import LedgerModal from './LedgerModal';
+import ConfirmDialog from '../../components/ConfirmDialog/ConfirmDialog';
 
 export default function COAPage() {
   const [accounts, setAccounts] = useState([]);
@@ -11,7 +13,10 @@ export default function COAPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [ledgerAccount, setLedgerAccount] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const { isRole } = useAuth();
+  const toast = useToast();
 
   const fetchAccounts = () => {
     setLoading(true);
@@ -45,6 +50,20 @@ export default function COAPage() {
   const handleFormSuccess = () => {
     setShowForm(false);
     fetchAccounts();
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/accounting/coa/${confirmDelete.id}`);
+      toast.success(`Akun ${confirmDelete.code} berhasil dihapus`);
+      setConfirmDelete(null);
+      fetchAccounts();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal menghapus akun');
+    }
+    setDeleting(false);
   };
 
   return (
@@ -86,7 +105,7 @@ export default function COAPage() {
                     <th style={{ width: 100 }}>Kode</th>
                     <th>Nama Akun</th>
                     <th style={{ width: 120 }}>Saldo Normal</th>
-                    <th style={{ width: 80 }}>Aksi</th>
+                    <th style={{ width: 100 }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -96,10 +115,18 @@ export default function COAPage() {
                       <td>{a.name}</td>
                       <td><span className="badge badge-neutral">{a.normal_balance}</span></td>
                       <td>
-                        <button className="btn btn-ghost btn-sm btn-icon" title="Buku Besar"
-                          onClick={() => setLedgerAccount(a)}>
-                          <Eye size={14} />
-                        </button>
+                        <div className="flex gap-xs">
+                          <button className="btn btn-ghost btn-sm btn-icon" title="Buku Besar"
+                            onClick={() => setLedgerAccount(a)}>
+                            <Eye size={14} />
+                          </button>
+                          {isRole('ADMIN', 'ACCOUNTANT') && (
+                            <button className="btn btn-ghost btn-sm btn-icon" title="Hapus akun"
+                              onClick={() => setConfirmDelete(a)} style={{ color: 'var(--danger)' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -116,6 +143,18 @@ export default function COAPage() {
 
       {ledgerAccount && (
         <LedgerModal account={ledgerAccount} onClose={() => setLedgerAccount(null)} />
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Hapus Akun"
+          message={`Yakin ingin menghapus akun "${confirmDelete.code} — ${confirmDelete.name}"? Akun yang sudah digunakan dalam jurnal tidak bisa dihapus.`}
+          confirmText="Hapus"
+          variant="danger"
+          loading={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

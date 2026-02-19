@@ -137,9 +137,9 @@ class JournalService
             ->whereHas('journalEntry', function ($q) use ($startDate, $endDate) {
                 $q->where('is_posted', true);
                 if ($startDate)
-                    $q->where('transaction_date', '>=', $startDate);
+                    $q->where('entry_date', '>=', $startDate);
                 if ($endDate)
-                    $q->where('transaction_date', '<=', $endDate);
+                    $q->where('entry_date', '<=', $endDate);
             })
             ->orderBy('created_at');
 
@@ -152,8 +152,10 @@ class JournalService
                 ? ((float) $line->debit - (float) $line->credit)
                 : ((float) $line->credit - (float) $line->debit);
 
+            $entryDate = $line->journalEntry->entry_date ?? $line->journalEntry->transaction_date;
+
             return [
-                'date' => $line->journalEntry->transaction_date->format('Y-m-d'),
+                'date' => $entryDate ? $entryDate->format('Y-m-d') : now()->format('Y-m-d'),
                 'entry_number' => $line->journalEntry->entry_number,
                 'description' => $line->journalEntry->description,
                 'debit' => (float) $line->debit,
@@ -187,7 +189,7 @@ class JournalService
                 ->whereHas('journalEntry', function ($q) use ($asOfDate) {
                     $q->where('is_posted', true);
                     if ($asOfDate)
-                        $q->where('transaction_date', '<=', $asOfDate);
+                        $q->where('entry_date', '<=', $asOfDate);
                 });
 
             $debits = (float) $query->sum('debit');
