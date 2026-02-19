@@ -133,6 +133,24 @@ class AccountingController extends Controller
         }
     }
 
+    /**
+     * DELETE /api/accounting/journals/{id}
+     * Only draft (unposted) journals can be deleted.
+     */
+    public function journalDestroy(string $id): JsonResponse
+    {
+        $entry = JournalEntry::findOrFail($id);
+
+        if ($entry->is_posted) {
+            return $this->error('Jurnal yang sudah diposting tidak bisa dihapus. Gunakan fitur reverse.', 422);
+        }
+
+        $entry->lines()->delete();
+        $entry->delete();
+
+        return $this->success(null, 'Jurnal berhasil dihapus');
+    }
+
     // ═══════════ LEDGER & REPORTS ═══════════
 
     /**

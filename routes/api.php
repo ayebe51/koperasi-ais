@@ -102,6 +102,8 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('role:ADMIN,ACCOUNTANT');
         Route::post('/journals/{id}/reverse', [AccountingController::class, 'journalReverse'])
             ->middleware('role:ADMIN,ACCOUNTANT');
+        Route::delete('/journals/{id}', [AccountingController::class, 'journalDestroy'])
+            ->middleware('role:ADMIN,ACCOUNTANT');
 
         // Ledger
         Route::get('/ledger/{accountCode}', [AccountingController::class, 'ledger'])
