@@ -35,6 +35,12 @@ function AuthRedirect({ children }) {
   return children;
 }
 
+function MemberRedirect() {
+  const { user } = useAuth();
+  if (user?.role === 'MEMBER') return <Navigate to="/portal" replace />;
+  return <DashboardPage />;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -49,7 +55,7 @@ export default function App() {
 
           {/* Protected - App Layout */}
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route index element={<DashboardPage />} />
+            <Route index element={<MemberRedirect />} />
 
             {/* Profil / Portal Anggota — All authenticated */}
             <Route path="profil" element={<ProfilPage />} />

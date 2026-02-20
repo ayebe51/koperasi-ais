@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api, { downloadExport } from '../../lib/api';
 import { formatDate, statusBadge } from '../../lib/utils';
-import { Users, Plus, Search, ChevronLeft, ChevronRight, Eye, Download } from 'lucide-react';
+import { Users, Plus, Search, ChevronLeft, ChevronRight, Eye, Download, UserPlus, UserCheck } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import MemberFormModal from './MemberFormModal';
 import './AnggotaPage.css';
@@ -37,6 +37,20 @@ export default function AnggotaListPage() {
   const handleCreated = () => {
     setShowForm(false);
     fetchMembers(1, '');
+  };
+
+  const handleCreateAccount = async (member) => {
+    try {
+      const res = await api.post(`/members/${member.id}/create-account`);
+      const d = res.data.data;
+      toast.success(
+        `Akun portal berhasil dibuat!\nEmail: ${d.email}\nPassword: ${d.default_password}`,
+        { duration: 15000 }
+      );
+      fetchMembers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal membuat akun portal');
+    }
   };
 
   return (
@@ -79,16 +93,17 @@ export default function AnggotaListPage() {
                 <th>Unit Kerja</th>
                 <th>Tgl Masuk</th>
                 <th>Status</th>
+                <th>Akun</th>
                 <th style={{ width: 60 }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="text-center" style={{ padding: '2rem' }}>
+                <tr><td colSpan={7} className="text-center" style={{ padding: '2rem' }}>
                   <div className="spinner" style={{ margin: '0 auto' }} />
                 </td></tr>
               ) : members.length === 0 ? (
-                <tr><td colSpan={6} className="text-center text-muted" style={{ padding: '2rem' }}>
+                <tr><td colSpan={7} className="text-center text-muted" style={{ padding: '2rem' }}>
                   Tidak ada data anggota
                 </td></tr>
               ) : members.map(m => (
@@ -98,6 +113,19 @@ export default function AnggotaListPage() {
                   <td>{m.unit_kerja || '-'}</td>
                   <td>{formatDate(m.join_date)}</td>
                   <td><span className={`badge badge-${statusBadge(m.status)}`}>{m.status}</span></td>
+                  <td>
+                    {m.has_account ? (
+                      <span className="badge badge-success" title="Sudah punya akun portal">
+                        <UserCheck size={12} /> Aktif
+                      </span>
+                    ) : (
+                      <button className="btn btn-ghost btn-sm" title="Buatkan Akun Portal"
+                        style={{ fontSize: '0.75rem', gap: '0.25rem' }}
+                        onClick={() => handleCreateAccount(m)}>
+                        <UserPlus size={14} /> Buat Akun
+                      </button>
+                    )}
+                  </td>
                   <td>
                     <Link to={`/anggota/${m.id}`} className="btn btn-ghost btn-sm btn-icon" title="Detail">
                       <Eye size={16} />

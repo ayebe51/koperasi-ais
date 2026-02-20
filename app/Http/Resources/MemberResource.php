@@ -29,6 +29,7 @@ class MemberResource extends JsonResource
                 ];
             }),
             'active_loans_count' => $this->when($this->active_loans_count !== null, $this->active_loans_count),
+            'has_account' => !is_null($this->user_id),
             'created_at' => $this->created_at?->toISOString(),
         ];
     }

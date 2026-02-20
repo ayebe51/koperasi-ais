@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Enums\MemberStatus;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Member\StoreMemberRequest;
 use App\Http\Requests\Member\UpdateMemberRequest;
@@ -10,9 +11,11 @@ use App\Http\Resources\MemberResource;
 use App\Http\Traits\ApiResponse;
 use App\Models\Member;
 use App\Models\MemberEquity;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class MemberController extends Controller
 {
@@ -108,5 +111,49 @@ class MemberController extends Controller
         $member->delete();
 
         return $this->success(null, 'Anggota berhasil dinonaktifkan');
+    }
+
+    /**
+     * POST /api/members/{id}/create-account
+     * Create a portal login account for a member
+     */
+    public function createPortalAccount(string $id): JsonResponse
+    {
+        $member = Member::findOrFail($id);
+
+        if ($member->user_id) {
+            return $this->error('Anggota ini sudah memiliki akun portal', 422);
+        }
+
+        // Use member's email, or generate one from member_number
+        $email = $member->email ?: strtolower(str_replace([' ', '/'], ['-', '-'], $member->member_number)) . '@koperasi.local';
+
+        // Check email uniqueness
+        if (User::where('email', $email)->exists()) {
+            return $this->error("Email {$email} sudah digunakan oleh user lain", 422);
+        }
+
+        // Default password = member_number
+        $defaultPassword = $member->member_number;
+
+        $user = DB::transaction(function () use ($member, $email, $defaultPassword) {
+            $user = User::create([
+                'name' => $member->name,
+                'email' => $email,
+                'password' => Hash::make($defaultPassword),
+                'role' => UserRole::MEMBER,
+            ]);
+
+            $member->update(['user_id' => $user->id]);
+
+            return $user;
+        });
+
+        return $this->created([
+            'user_id' => $user->id,
+            'email' => $email,
+            'default_password' => $defaultPassword,
+            'member_name' => $member->name,
+        ], 'Akun portal berhasil dibuat');
     }
 }

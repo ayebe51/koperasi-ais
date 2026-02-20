@@ -50,6 +50,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [MemberController::class, 'update']);
         Route::delete('/{id}', [MemberController::class, 'destroy'])
             ->middleware('role:ADMIN,MANAGER');
+        Route::post('/{id}/create-account', [MemberController::class, 'createPortalAccount'])
+            ->middleware('role:ADMIN,MANAGER');
     });
 
     // ─── Savings ───
