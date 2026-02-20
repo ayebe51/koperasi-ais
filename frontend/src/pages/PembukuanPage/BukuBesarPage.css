@@ -1,0 +1,174 @@
+/* ═══ Buku Besar Page ═══ */
+
+.buku-besar-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.buku-besar-toolbar .form-group {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.buku-besar-toolbar .form-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.buku-besar-toolbar select.form-input {
+  min-width: 300px;
+}
+
+.buku-besar-toolbar input[type="date"] {
+  width: 150px;
+}
+
+.buku-besar-toolbar .toolbar-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-left: auto;
+  align-self: flex-end;
+}
+
+/* Summary cards */
+.buku-besar-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.bb-summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bb-summary-card .bb-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bb-summary-card .bb-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.bb-summary-card.bb-debit {
+  border-left: 3px solid var(--primary-400, #38bdf8);
+}
+
+.bb-summary-card.bb-credit {
+  border-left: 3px solid #a78bfa;
+}
+
+.bb-summary-card.bb-balance {
+  border-left: 3px solid var(--success, #22c55e);
+}
+
+.bb-summary-card.bb-balance .bb-value {
+  color: var(--success, #22c55e);
+}
+
+.bb-summary-card.bb-count {
+  border-left: 3px solid #f59e0b;
+}
+
+/* Account header */
+.bb-account-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bb-account-code {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.25rem 0.6rem;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  color: var(--primary-400);
+}
+
+.bb-account-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.bb-account-category {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+/* Table enhancements */
+.bb-saldo-awal {
+  background: var(--bg-elevated);
+  font-style: italic;
+}
+
+/* Print */
+@media print {
+  .buku-besar-toolbar .toolbar-actions,
+  .sidebar,
+  .navbar,
+  .no-print {
+    display: none !important;
+  }
+
+  .app-layout {
+    display: block !important;
+  }
+
+  .main-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+  }
+
+  .buku-besar-toolbar {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .bb-summary-card {
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  .data-table th,
+  .data-table td {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
+}

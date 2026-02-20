@@ -25,9 +25,10 @@ const menuItems = [
   {
     icon: BookOpen, label: 'Pembukuan', roles: ['ADMIN','MANAGER','ACCOUNTANT'],
     children: [
-      { to: '/pembukuan/coa',     label: 'Chart of Account' },
-      { to: '/pembukuan/jurnal',  label: 'Jurnal Umum' },
-      { to: '/pembukuan/laporan', label: 'Laporan Keuangan' },
+      { to: '/pembukuan/coa',         label: 'Chart of Account' },
+      { to: '/pembukuan/jurnal',      label: 'Jurnal Umum' },
+      { to: '/pembukuan/buku-besar',  label: 'Buku Besar' },
+      { to: '/pembukuan/laporan',     label: 'Laporan Keuangan' },
     ],
   },
   { to: '/shu',               icon: Calculator,      label: 'SHU',                   roles: ['ADMIN','MANAGER','ACCOUNTANT'] },
