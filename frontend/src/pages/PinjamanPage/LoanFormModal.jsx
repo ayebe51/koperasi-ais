@@ -42,7 +42,7 @@ export default function LoanFormModal({ onClose, onSuccess }) {
     setSimLoading(true);
     try {
       const res = await api.post('/loans/simulate', {
-        amount: parseFloat(form.amount),
+        principal_amount: parseFloat(form.amount),
         term_months: parseInt(form.term_months),
         interest_rate: parseFloat(form.interest_rate),
       });
@@ -58,7 +58,7 @@ export default function LoanFormModal({ onClose, onSuccess }) {
     try {
       await api.post('/loans/apply', {
         member_id: form.member_id,
-        amount: parseFloat(form.amount),
+        principal_amount: parseFloat(form.amount),
         term_months: parseInt(form.term_months),
         interest_rate: parseFloat(form.interest_rate),
         purpose: form.purpose,

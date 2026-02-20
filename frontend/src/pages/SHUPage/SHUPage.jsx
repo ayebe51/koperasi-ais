@@ -104,7 +104,7 @@ export default function SHUPage() {
               {chartData && <Doughnut data={chartData} options={{
                 responsive: true, maintainAspectRatio: false,
                 plugins: {
-                  legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 12, usePointStyle: true } },
+                  legend: { position: 'bottom', labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim(), padding: 12, usePointStyle: true } },
                   tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${formatRupiah(ctx.raw)}` } },
                 },
               }} />}

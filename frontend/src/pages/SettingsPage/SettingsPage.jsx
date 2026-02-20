@@ -108,13 +108,14 @@ export default function SettingsPage() {
           <div className="card-header">
             <h3 className="card-title">Distribusi SHU (%)</h3>
           </div>
-          <div className="grid grid-5" style={{ gap: 'var(--space-md)' }}>
+          <div className="grid grid-3" style={{ gap: 'var(--space-md)' }}>
             {[
-              ['persentase_shu_anggota', 'Anggota'],
-              ['persentase_shu_pengurus', 'Pengurus'],
-              ['persentase_shu_cadangan', 'Cadangan'],
-              ['persentase_shu_pendidikan', 'Pendidikan'],
-              ['persentase_shu_sosial', 'Sosial'],
+              ['persentase_shu_anggota', 'Jasa Anggota'],
+              ['persentase_shu_cadangan', 'Cadangan Umum'],
+              ['persentase_shu_maarif', "Lembaga Ma'arif"],
+              ['persentase_shu_pendidikan', 'Dana Pendidikan'],
+              ['persentase_shu_sosial', 'Dana Sosial'],
+              ['persentase_shu_pengurus', 'Dana Pengurus'],
             ].map(([key, label]) => (
               <div className="form-group" key={key}>
                 <label className="form-label">{label}</label>
@@ -125,9 +126,9 @@ export default function SettingsPage() {
           </div>
           <p className="text-sm text-muted" style={{ marginTop: 'var(--space-sm)' }}>
             Total: <strong>{
-              (form.persentase_shu_anggota + form.persentase_shu_pengurus +
-               form.persentase_shu_cadangan + form.persentase_shu_pendidikan +
-               form.persentase_shu_sosial).toFixed(1)
+              (form.persentase_shu_anggota + form.persentase_shu_cadangan +
+               form.persentase_shu_maarif + form.persentase_shu_pendidikan +
+               form.persentase_shu_sosial + form.persentase_shu_pengurus).toFixed(1)
             }%</strong> (harus 100%)
           </p>
         </div>

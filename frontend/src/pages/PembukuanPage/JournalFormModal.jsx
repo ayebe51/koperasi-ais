@@ -4,13 +4,13 @@ import { useToast } from '../../contexts/ToastContext';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { formatRupiah } from '../../lib/utils';
 
-const emptyLine = () => ({ account_id: '', type: 'DEBIT', amount: '' });
+const emptyLine = () => ({ account_code: '', type: 'DEBIT', amount: '' });
 
 export default function JournalFormModal({ onClose, onSuccess }) {
   const toast = useToast();
   const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState({
-    transaction_date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split('T')[0],
     description: '',
   });
   const [lines, setLines] = useState([emptyLine(), emptyLine()]);
@@ -44,11 +44,13 @@ export default function JournalFormModal({ onClose, onSuccess }) {
     setLoading(true);
     try {
       await api.post('/accounting/journals', {
-        ...form,
+        date: form.date,
+        description: form.description,
+        auto_post: true,
         lines: lines.map(l => ({
-          account_id: parseInt(l.account_id),
-          type: l.type,
-          amount: parseFloat(l.amount),
+          account_code: l.account_code,
+          debit: l.type === 'DEBIT' ? parseFloat(l.amount) || 0 : 0,
+          credit: l.type === 'CREDIT' ? parseFloat(l.amount) || 0 : 0,
         })),
       });
       toast.success('Jurnal berhasil dibuat');
@@ -71,8 +73,8 @@ export default function JournalFormModal({ onClose, onSuccess }) {
             <div className="grid grid-2" style={{ gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Tanggal Transaksi *</label>
-                <input type="date" className="form-input" required value={form.transaction_date}
-                  onChange={e => setForm(f => ({ ...f, transaction_date: e.target.value }))} />
+                <input type="date" className="form-input" required value={form.date}
+                  onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Keterangan *</label>
@@ -96,12 +98,12 @@ export default function JournalFormModal({ onClose, onSuccess }) {
                   {lines.map((line, i) => (
                     <tr key={i}>
                       <td>
-                        <select className="form-input form-select" value={line.account_id}
-                          onChange={e => updateLine(i, 'account_id', e.target.value)} required
+                        <select className="form-input form-select" value={line.account_code}
+                          onChange={e => updateLine(i, 'account_code', e.target.value)} required
                           style={{ fontSize: '0.8rem' }}>
                           <option value="">— Pilih Akun —</option>
                           {accounts.map(a => (
-                            <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
+                            <option key={a.id} value={a.code}>{a.code} — {a.name}</option>
                           ))}
                         </select>
                       </td>

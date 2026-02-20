@@ -43,6 +43,12 @@ export default function DashboardPage() {
   );
   if (!stats) return <div className="page-loading"><p>Gagal memuat data</p></div>;
 
+  const cs = getComputedStyle(document.documentElement);
+  const bgSecondary = cs.getPropertyValue('--bg-secondary').trim();
+  const borderColor = cs.getPropertyValue('--border-color').trim();
+  const textSecondary = cs.getPropertyValue('--text-secondary').trim();
+  const textMuted = cs.getPropertyValue('--text-muted').trim();
+
   const savingsData = {
     labels: ['Pokok', 'Wajib', 'Sukarela'],
     datasets: [{
@@ -57,10 +63,10 @@ export default function DashboardPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
+      legend: { position: 'bottom', labels: { color: textSecondary, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
       tooltip: {
         callbacks: { label: (ctx) => ` ${ctx.label}: ${formatRupiah(ctx.raw)}` },
-        backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+        backgroundColor: bgSecondary, borderColor: borderColor, borderWidth: 1,
       },
     },
   };
@@ -83,12 +89,12 @@ export default function DashboardPage() {
       legend: { display: false },
       tooltip: {
         callbacks: { label: (ctx) => formatRupiah(ctx.raw) },
-        backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+        backgroundColor: bgSecondary, borderColor: borderColor, borderWidth: 1,
       },
     },
     scales: {
-      x: { ticks: { color: '#64748b' }, grid: { display: false } },
-      y: { ticks: { color: '#64748b', callback: (v) => formatRupiah(v) }, grid: { color: 'rgba(148,163,184,0.08)' } },
+      x: { ticks: { color: textMuted }, grid: { display: false } },
+      y: { ticks: { color: textMuted, callback: (v) => formatRupiah(v) }, grid: { color: 'rgba(148,163,184,0.08)' } },
     },
   };
 

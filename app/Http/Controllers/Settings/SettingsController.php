@@ -24,10 +24,11 @@ class SettingsController extends Controller
         'simpanan_pokok' => 100000,
         'simpanan_wajib' => 50000,
         'persentase_shu_anggota' => 40,
-        'persentase_shu_pengurus' => 20,
-        'persentase_shu_cadangan' => 25,
+        'persentase_shu_cadangan' => 20,
+        'persentase_shu_maarif' => 17.5,
         'persentase_shu_pendidikan' => 5,
-        'persentase_shu_sosial' => 10,
+        'persentase_shu_sosial' => 5,
+        'persentase_shu_pengurus' => 12.5,
     ];
 
     /**
@@ -57,10 +58,11 @@ class SettingsController extends Controller
             'simpanan_pokok' => 'required|numeric|min:0',
             'simpanan_wajib' => 'required|numeric|min:0',
             'persentase_shu_anggota' => 'required|numeric|min:0|max:100',
-            'persentase_shu_pengurus' => 'required|numeric|min:0|max:100',
             'persentase_shu_cadangan' => 'required|numeric|min:0|max:100',
+            'persentase_shu_maarif' => 'required|numeric|min:0|max:100',
             'persentase_shu_pendidikan' => 'required|numeric|min:0|max:100',
             'persentase_shu_sosial' => 'required|numeric|min:0|max:100',
+            'persentase_shu_pengurus' => 'required|numeric|min:0|max:100',
         ]);
 
         Cache::forever(self::CACHE_KEY, $validated);
