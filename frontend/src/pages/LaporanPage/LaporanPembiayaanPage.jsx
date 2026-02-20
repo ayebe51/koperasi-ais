@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah, formatNumber } from '../../lib/utils';
 import { Landmark, AlertTriangle, TrendingUp, CreditCard, Users } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function LaporanPembiayaanPage() {
+  const toast = useToast();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(new Date().getFullYear() + '-01-01');
@@ -14,7 +16,9 @@ export default function LaporanPembiayaanPage() {
     try {
       const res = await api.get('/reports/unit-pembiayaan', { params: { start_date: startDate, end_date: endDate } });
       setReport(res.data.data);
-    } catch {}
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal memuat laporan pembiayaan');
+    }
     setLoading(false);
   };
 

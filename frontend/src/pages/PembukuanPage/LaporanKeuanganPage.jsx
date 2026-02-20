@@ -1,10 +1,19 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah } from '../../lib/utils';
-import { FileText, Download, Printer } from 'lucide-react';
+import { Printer } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import './LaporanPage.css';
 
+const REPORT_MAP = {
+  'neraca': { endpoint: '/accounting/reports/balance-sheet', label: 'Neraca' },
+  'laba-rugi': { endpoint: '/accounting/reports/income-statement', label: 'Laba Rugi' },
+  'arus-kas': { endpoint: '/accounting/reports/cash-flow', label: 'Arus Kas' },
+  'buku-besar': { endpoint: '/accounting/trial-balance', label: 'Neraca Saldo' },
+};
+
 export default function LaporanKeuanganPage() {
+  const toast = useToast();
   const [reportType, setReportType] = useState('neraca');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -13,18 +22,23 @@ export default function LaporanKeuanganPage() {
 
   const fetchReport = async () => {
     setLoading(true);
+    setReport(null);
     try {
-      const res = await api.get(`/accounting/reports/${reportType}`, {
-        params: { start_date: startDate, end_date: endDate }
-      });
+      const { endpoint } = REPORT_MAP[reportType];
+      const params = reportType === 'neraca'
+        ? { as_of_date: endDate }
+        : { start_date: startDate, end_date: endDate };
+      const res = await api.get(endpoint, { params });
       setReport(res.data.data);
-    } catch {}
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal memuat laporan');
+    }
     setLoading(false);
   };
 
   useEffect(() => { fetchReport(); }, [reportType]);
 
-  const renderNeraca = () => {
+  const renderSections = () => {
     if (!report?.sections) return null;
     return report.sections.map((section, i) => (
       <div key={i} className="report-section">
@@ -48,6 +62,44 @@ export default function LaporanKeuanganPage() {
     ));
   };
 
+  const renderTrialBalance = () => {
+    if (!report?.accounts) return null;
+    return (
+      <div className="report-section">
+        <div className="report-rows">
+          <div className="report-row report-total" style={{ marginBottom: 'var(--space-sm)' }}>
+            <div className="report-row-label"><strong>Kode</strong> <strong>Nama Akun</strong></div>
+            <div style={{ display: 'flex', gap: 'var(--space-xl)' }}>
+              <strong className="font-mono" style={{ minWidth: 120, textAlign: 'right' }}>Debit</strong>
+              <strong className="font-mono" style={{ minWidth: 120, textAlign: 'right' }}>Kredit</strong>
+            </div>
+          </div>
+          {report.accounts.map((acc, j) => (
+            <div key={j} className="report-row">
+              <div className="report-row-label">
+                <span className="font-mono text-xs text-muted">{acc.code}</span>
+                <span>{acc.name}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--space-xl)' }}>
+                <span className="font-mono" style={{ minWidth: 120, textAlign: 'right' }}>{acc.debit ? formatRupiah(acc.debit) : '-'}</span>
+                <span className="font-mono" style={{ minWidth: 120, textAlign: 'right' }}>{acc.credit ? formatRupiah(acc.credit) : '-'}</span>
+              </div>
+            </div>
+          ))}
+          {report.totals && (
+            <div className="report-row report-total">
+              <span><strong>Total</strong></span>
+              <div style={{ display: 'flex', gap: 'var(--space-xl)' }}>
+                <strong className="font-mono" style={{ minWidth: 120, textAlign: 'right' }}>{formatRupiah(report.totals.debit)}</strong>
+                <strong className="font-mono" style={{ minWidth: 120, textAlign: 'right' }}>{formatRupiah(report.totals.credit)}</strong>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -63,16 +115,11 @@ export default function LaporanKeuanganPage() {
       {/* Report selector */}
       <div className="toolbar">
         <div className="report-tabs">
-          {[
-            { key: 'neraca', label: 'Neraca' },
-            { key: 'laba-rugi', label: 'Laba Rugi' },
-            { key: 'arus-kas', label: 'Arus Kas' },
-            { key: 'buku-besar', label: 'Buku Besar' },
-          ].map(tab => (
-            <button key={tab.key}
-              className={`btn ${reportType === tab.key ? 'btn-primary' : 'btn-ghost'} btn-sm`}
-              onClick={() => setReportType(tab.key)}>
-              {tab.label}
+          {Object.entries(REPORT_MAP).map(([key, { label }]) => (
+            <button key={key}
+              className={`btn ${reportType === key ? 'btn-primary' : 'btn-ghost'} btn-sm`}
+              onClick={() => setReportType(key)}>
+              {label}
             </button>
           ))}
         </div>
@@ -91,14 +138,14 @@ export default function LaporanKeuanganPage() {
         {loading ? (
           <div className="page-loading"><div className="spinner" /></div>
         ) : !report ? (
-          <div className="empty-state"><p>Pilih jenis laporan dan periode</p></div>
+          <div className="empty-state"><p>Pilih jenis laporan dan periode, lalu klik Tampilkan</p></div>
         ) : (
           <div className="report-content">
             <div className="report-header-info">
-              <h3>{report.title || reportType.replace('-', ' ').toUpperCase()}</h3>
+              <h3>{report.title || REPORT_MAP[reportType].label}</h3>
               <p className="text-sm text-muted">Periode: {report.period || `${startDate} s/d ${endDate}`}</p>
             </div>
-            {renderNeraca()}
+            {reportType === 'buku-besar' ? renderTrialBalance() : renderSections()}
           </div>
         )}
       </div>

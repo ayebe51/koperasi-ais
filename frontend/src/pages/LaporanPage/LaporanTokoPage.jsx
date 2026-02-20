@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah, formatNumber } from '../../lib/utils';
 import { BarChart3, TrendingUp, Package, DollarSign, ShoppingCart } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export default function LaporanTokoPage() {
+  const toast = useToast();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 7) + '-01');
@@ -18,7 +20,9 @@ export default function LaporanTokoPage() {
     try {
       const res = await api.get('/reports/unit-toko', { params: { start_date: startDate, end_date: endDate } });
       setReport(res.data.data);
-    } catch {}
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal memuat laporan toko');
+    }
     setLoading(false);
   };
 
