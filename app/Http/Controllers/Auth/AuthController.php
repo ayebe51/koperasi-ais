@@ -7,10 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Traits\ApiResponse;
+use App\Models\Member;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -111,5 +113,52 @@ class AuthController extends Controller
         $user->update(['password' => Hash::make($request->new_password)]);
 
         return $this->success(null, 'Password berhasil diubah');
+    }
+
+    /**
+     * POST /api/auth/activate-member
+     * Self-activation: member verifies identity with member_number + NIK
+     */
+    public function activateMember(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'member_number' => 'required|string',
+            'nik' => 'required|string|size:16',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+        ]);
+
+        // Find member by member_number + NIK combination
+        $member = Member::where('member_number', $validated['member_number'])
+            ->where('nik', $validated['nik'])
+            ->first();
+
+        if (!$member) {
+            return $this->error('Nomor anggota atau NIK tidak cocok', 422);
+        }
+
+        if ($member->user_id) {
+            return $this->error('Akun anggota ini sudah diaktivasi sebelumnya. Silakan login.', 422);
+        }
+
+        $user = DB::transaction(function () use ($member, $validated) {
+            $user = User::create([
+                'name' => $member->name,
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => UserRole::MEMBER,
+            ]);
+
+            $member->update(['user_id' => $user->id]);
+
+            return $user;
+        });
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return $this->created([
+            'user' => $user->only('id', 'name', 'email', 'role'),
+            'token' => $token,
+        ], 'Aktivasi berhasil! Anda sekarang bisa mengakses portal anggota.');
     }
 }

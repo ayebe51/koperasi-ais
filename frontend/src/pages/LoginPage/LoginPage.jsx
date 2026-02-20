@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Landmark, Eye, EyeOff } from 'lucide-react';
 import './LoginPage.css';
@@ -79,7 +79,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="login-footer">
+        <div className="login-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' }}>
+          <Link to="/aktivasi" className="text-sm" style={{ color: 'var(--primary)' }}>
+            Anggota? Aktivasi akun portal di sini →
+          </Link>
           <p className="text-xs text-muted">© 2026 Koperasi AIS Ma'arif NU Cilacap</p>
         </div>
       </div>

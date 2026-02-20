@@ -28,6 +28,7 @@ import SettingsPage from './pages/SettingsPage/SettingsPage';
 import ActivityLogPage from './pages/ActivityLogPage/ActivityLogPage';
 import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
 import MemberPortalPage from './pages/PortalPage/MemberPortalPage';
+import ActivateMemberPage from './pages/ActivatePage/ActivateMemberPage';
 
 function AuthRedirect({ children }) {
   const { isAuthenticated } = useAuth();
@@ -51,6 +52,9 @@ export default function App() {
           {/* Public */}
           <Route path="/login" element={
             <AuthRedirect><LoginPage /></AuthRedirect>
+          } />
+          <Route path="/aktivasi" element={
+            <AuthRedirect><ActivateMemberPage /></AuthRedirect>
           } />
 
           {/* Protected - App Layout */}
