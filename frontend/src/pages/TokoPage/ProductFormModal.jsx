@@ -11,6 +11,7 @@ export default function ProductFormModal({ onClose, onSuccess, product = null })
     name: product?.name || '',
     sell_price: product?.sell_price || product?.selling_price || '',
     unit: product?.unit || 'pcs',
+    cogs_method: product?.cogs_method || 'AVERAGE',
     is_active: product?.is_active ?? true,
   });
   const [errors, setErrors] = useState({});
@@ -78,6 +79,13 @@ export default function ProductFormModal({ onClose, onSuccess, product = null })
                   <option value="box">box</option>
                   <option value="set">set</option>
                   <option value="lusin">lusin</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Metode HPP</label>
+                <select className="form-input form-select" name="cogs_method" value={form.cogs_method} onChange={handleChange}>
+                  <option value="AVERAGE">Rata-rata (AVERAGE)</option>
+                  <option value="FIFO">FIFO</option>
                 </select>
               </div>
             </div>
