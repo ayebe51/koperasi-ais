@@ -62,10 +62,14 @@ export default function PinjamanDetailPage() {
     e.preventDefault();
     setPayLoading(true);
     try {
-      await api.post(`/loans/${id}/pay`, { amount: parseFloat(payForm.amount) });
+      await api.post(`/loans/${id}/pay`, {
+        payment_date: new Date().toISOString().split('T')[0],
+        payment_method: 'CASH'
+      });
       setShowPayment(false);
-      setPayForm({ amount: '' });
       fetchLoan();
+      // Refresh schedule
+      api.get(`/loans/${id}/schedule`).then(res => setSchedule(res.data.data)).catch(()=>{});
     } catch {}
     setPayLoading(false);
   };
@@ -74,6 +78,7 @@ export default function PinjamanDetailPage() {
   if (!loan) return null;
 
   const progress = loan.principal_amount > 0 ? ((loan.principal_amount - loan.remaining_balance) / loan.principal_amount * 100) : 0;
+  const nextPayment = schedule?.schedule?.find(s => !s.is_paid);
 
   return (
     <div className="page">
@@ -265,22 +270,37 @@ export default function PinjamanDetailPage() {
             </div>
             <form onSubmit={handlePayment}>
               <div className="modal-body">
-                <p className="text-sm text-muted" style={{ marginBottom: 'var(--space-md)' }}>
-                  Sisa pinjaman: <strong>{formatRupiah(loan.remaining_balance)}</strong>
-                </p>
-                <div className="form-group">
-                  <label className="form-label">Jumlah Bayar (Rp) *</label>
-                  <input className="form-input" type="number" min="1000" step="1000"
-                    value={payForm.amount}
-                    onChange={e => setPayForm({ amount: e.target.value })}
-                    placeholder="Jumlah angsuran" required autoFocus />
-                </div>
+                {nextPayment ? (
+                  <>
+                    <p className="text-sm text-muted" style={{ marginBottom: 'var(--space-md)' }}>
+                      Konfirmasi pembayaran angsuran ke-<strong>{nextPayment.installment_number}</strong>
+                    </p>
+                    <div className="info-rows card" style={{ padding: '1rem', background: 'var(--bg-muted)' }}>
+                      <div className="info-row"><span>Tagihan Pokok:</span><strong className="font-mono">{formatRupiah(nextPayment.principal_amount)}</strong></div>
+                      <div className="info-row"><span>Bunga:</span><strong className="font-mono">{formatRupiah(nextPayment.interest_amount)}</strong></div>
+                      <div className="info-row" style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed var(--border)' }}>
+                        <span><strong>Total Pembayaran:</strong></span>
+                        <strong className="font-mono text-lg" style={{ color: 'var(--success)' }}>{formatRupiah(nextPayment.total_amount)}</strong>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted" style={{ marginTop: 'var(--space-md)' }}>
+                      Pembayaran akan memotong sisa pinjaman secara otomatis sesuai jadwal angsuran.
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-center" style={{ padding: '2rem 1rem' }}>
+                    <CheckCircle size={48} style={{ color: 'var(--success)', margin: '0 auto var(--space-md)' }} />
+                    <p>Semua jadwal angsuran sudah lunas.</p>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowPayment(false)}>Batal</button>
-                <button type="submit" className="btn btn-primary" disabled={payLoading}>
-                  {payLoading ? 'Memproses...' : 'Bayar'}
-                </button>
+                {nextPayment && (
+                  <button type="submit" className="btn btn-primary" disabled={payLoading}>
+                    {payLoading ? 'Memproses...' : 'Konfirmasi Bayar'}
+                  </button>
+                )}
               </div>
             </form>
           </div>

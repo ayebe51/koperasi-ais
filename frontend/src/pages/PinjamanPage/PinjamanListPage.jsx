@@ -124,7 +124,7 @@ export default function PinjamanListPage() {
                     <div className="text-xs text-muted">{loan.member?.member_number}</div>
                   </td>
                   <td>{formatDate(loan.application_date)}</td>
-                  <td className="text-right font-mono">{formatRupiah(loan.amount)}</td>
+                  <td className="text-right font-mono">{formatRupiah(loan.principal_amount)}</td>
                   <td className="text-right font-mono">{formatRupiah(loan.remaining_balance)}</td>
                   <td><span className={`badge badge-${statusBadge(loan.status)}`}>{loan.status}</span></td>
                   <td>

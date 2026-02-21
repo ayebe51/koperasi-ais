@@ -92,13 +92,15 @@ class LoanController extends Controller
             'rejection_reason' => $validated['rejection_reason'] ?? null
         ]);
 
-        \App\Models\Notification::create([
-            'user_id' => $loan->member->user_id,
-            'type' => 'LOAN_REJECTED',
-            'title' => 'Pinjaman Ditolak',
-            'message' => "Pengajuan pinjaman {$loan->loan_number} ditolak. Alasan: " . ($validated['rejection_reason'] ?? 'Tidak ada'),
-            'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
-        ]);
+        if ($loan->member && $loan->member->user_id) {
+            \App\Models\Notification::create([
+                'user_id' => $loan->member->user_id,
+                'type' => 'LOAN_REJECTED',
+                'title' => 'Pinjaman Ditolak',
+                'message' => "Pengajuan pinjaman {$loan->loan_number} ditolak. Alasan: " . ($validated['rejection_reason'] ?? 'Tidak ada'),
+                'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
+            ]);
+        }
 
         return $this->success(new LoanResource($loan), 'Pinjaman ditolak');
     }
