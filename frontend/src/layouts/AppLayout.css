@@ -3,6 +3,7 @@
 .app-layout {
   display: flex;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* ─── Sidebar ─── */
@@ -135,6 +136,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .sidebar-collapsed .main-wrapper { margin-left: var(--sidebar-collapsed); }
@@ -194,6 +197,8 @@
 .main-content {
   flex: 1;
   padding: var(--space-xl);
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* ─── Overlay ─── */
