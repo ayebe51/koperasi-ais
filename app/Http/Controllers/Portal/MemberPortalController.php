@@ -61,7 +61,7 @@ class MemberPortalController extends Controller
         $startDate = now()->subMonths(5)->startOfMonth();
 
         $savingsStats = $member->savings()
-            ->selectRaw('DATE_FORMAT(transaction_date, "%Y-%m") as month, SUM(amount) as total')
+            ->selectRaw("TO_CHAR(transaction_date, 'YYYY-MM') as month, SUM(amount) as total")
             ->where('transaction_type', 'DEPOSIT')
             ->where('transaction_date', '>=', $startDate)
             ->groupBy('month')
@@ -72,7 +72,7 @@ class MemberPortalController extends Controller
         $loanPaymentsStats = \App\Models\LoanPayment::whereHas('loan', function ($q) use ($member) {
             $q->where('member_id', $member->id);
         })
-            ->selectRaw('DATE_FORMAT(payment_date, "%Y-%m") as month, SUM(total_paid) as total')
+            ->selectRaw("TO_CHAR(payment_date, 'YYYY-MM') as month, SUM(total_paid) as total")
             ->where('payment_date', '>=', $startDate)
             ->groupBy('month')
             ->orderBy('month')
