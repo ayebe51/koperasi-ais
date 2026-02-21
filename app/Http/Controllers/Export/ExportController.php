@@ -92,7 +92,7 @@ class ExportController extends Controller
      */
     public function loans(Request $request): Response
     {
-        $query = Loan::with('member')->orderByDesc('application_date');
+        $query = Loan::with('member')->orderByDesc('loan_date');
 
         if ($request->has('status'))
             $query->where('status', $request->status);
@@ -105,11 +105,11 @@ class ExportController extends Controller
                 $l->loan_number,
                 $l->member?->name ?? '',
                 $l->member?->member_number ?? '',
-                $l->application_date?->format('Y-m-d') ?? '',
-                $l->amount,
+                $l->loan_date?->format('Y-m-d') ?? '',
+                $l->principal_amount,
                 $l->term_months,
                 $l->interest_rate,
-                $l->remaining_balance,
+                $l->getOutstandingBalance(),
                 $l->status->value ?? $l->status,
                 $l->purpose ?? '',
             ])->toArray()

@@ -1,13 +1,22 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah, formatDate } from '../../lib/utils';
+import { useToast } from '../../contexts/ToastContext';
 import {
-  User, Wallet, CreditCard, TrendingUp,
-  ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertTriangle
+  User, Wallet, CreditCard, TrendingUp, Plus, X, Loader, Upload, Trash2,
+  ChevronLeft, ChevronRight, Clock, CheckCircle2, AlertTriangle, BarChart2
 } from 'lucide-react';
+import {
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+  LineElement, BarElement, Title as ChartTitle, Tooltip, Legend
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import './MemberPortalPage.css';
 
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ChartTitle, Tooltip, Legend);
+
 export default function MemberPortalPage() {
+  const toast = useToast();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('overview'); // overview | savings | loans
@@ -17,6 +26,20 @@ export default function MemberPortalPage() {
   const [loans, setLoans] = useState([]);
   const [savingsLoading, setSavingsLoading] = useState(false);
   const [loansLoading, setLoansLoading] = useState(false);
+
+  // Loan application
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyForm, setApplyForm] = useState({ principal_amount: '', term_months: '', purpose: '' });
+  const [applyDocs, setApplyDocs] = useState([]); // [{ file, type }]
+  const [applying, setApplying] = useState(false);
+
+  const DOC_TYPES = [
+    { value: 'KTP', label: 'KTP' },
+    { value: 'SLIP_GAJI', label: 'Slip Gaji' },
+    { value: 'SURAT_PERMOHONAN', label: 'Surat Permohonan' },
+    { value: 'JAMINAN', label: 'Dokumen Jaminan' },
+    { value: 'LAINNYA', label: 'Lainnya' },
+  ];
 
   useEffect(() => {
     api.get('/me/dashboard')
@@ -33,12 +56,58 @@ export default function MemberPortalPage() {
         .catch(() => {}).finally(() => setSavingsLoading(false));
     }
     if (tab === 'loans' && loans.length === 0) {
-      setLoansLoading(true);
-      api.get('/me/loans')
-        .then(res => setLoans(res.data.data || []))
-        .catch(() => {}).finally(() => setLoansLoading(false));
+      fetchLoans();
     }
   }, [tab, savingsPage]);
+
+  const fetchLoans = () => {
+    setLoansLoading(true);
+    api.get('/me/loans')
+      .then(res => setLoans(res.data.data || []))
+      .catch(() => {}).finally(() => setLoansLoading(false));
+  };
+
+  const handleAddDoc = (e) => {
+    const files = Array.from(e.target.files);
+    const newDocs = [];
+    for (const file of files) {
+      if (applyDocs.length + newDocs.length >= 5) { toast.error('Maksimal 5 dokumen'); break; }
+      if (file.size > 512 * 1024) { toast.error(`${file.name} melebihi 500KB`); continue; }
+      if (!['application/pdf','image/jpeg','image/png','image/jpg'].includes(file.type)) {
+        toast.error(`${file.name}: format harus PDF, JPG, atau PNG`); continue;
+      }
+      newDocs.push({ file, type: 'LAINNYA' });
+    }
+    setApplyDocs(prev => [...prev, ...newDocs]);
+    e.target.value = '';
+  };
+
+  const handleRemoveDoc = (idx) => setApplyDocs(prev => prev.filter((_, i) => i !== idx));
+  const handleDocTypeChange = (idx, type) => setApplyDocs(prev => prev.map((d, i) => i === idx ? { ...d, type } : d));
+
+  const handleApplyLoan = async (e) => {
+    e.preventDefault();
+    setApplying(true);
+    try {
+      const fd = new FormData();
+      fd.append('principal_amount', parseFloat(applyForm.principal_amount));
+      fd.append('term_months', parseInt(applyForm.term_months));
+      if (applyForm.purpose) fd.append('purpose', applyForm.purpose);
+      applyDocs.forEach((d, i) => {
+        fd.append(`documents[${i}]`, d.file);
+        fd.append(`document_types[${i}]`, d.type);
+      });
+      await api.post('/me/loans/apply', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Pengajuan pinjaman berhasil! Menunggu persetujuan admin.');
+      setShowApplyModal(false);
+      setApplyForm({ principal_amount: '', term_months: '', purpose: '' });
+      setApplyDocs([]);
+      fetchLoans();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mengajukan pinjaman');
+    }
+    setApplying(false);
+  };
 
   if (loading) return <div className="page-loading"><div className="spinner" /></div>;
 
@@ -54,7 +123,52 @@ export default function MemberPortalPage() {
     );
   }
 
-  const { member, savings: savingsSummary, active_loans, recent_savings } = dashboard;
+  const { member, savings: savingsSummary, active_loans, recent_savings, statistics } = dashboard;
+
+  const chartData = {
+    labels: statistics?.map(s => s.month) || [],
+    datasets: [
+      {
+        label: 'Setoran Simpanan',
+        data: statistics?.map(s => s.savings) || [],
+        backgroundColor: 'rgba(52, 211, 153, 0.6)',
+        borderColor: 'rgb(52, 211, 153)',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: 'Pembayaran Angsuran',
+        data: statistics?.map(s => s.installments) || [],
+        backgroundColor: 'rgba(96, 165, 250, 0.6)',
+        borderColor: 'rgb(96, 165, 250)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 6 } },
+      tooltip: {
+        callbacks: {
+          label: (context) => context.dataset.label + ': ' + formatRupiah(context.raw)
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => value >= 1000000 ? 'Rp ' + (value / 1000000) + 'Jt' : 'Rp ' + (value / 1000) + 'k'
+        },
+        grid: { borderDash: [4, 4] }
+      },
+      x: { grid: { display: false } }
+    }
+  };
 
   return (
     <div className="page portal-page">
@@ -110,6 +224,18 @@ export default function MemberPortalPage() {
               <span className="portal-card-value">{formatRupiah(savingsSummary.total)}</span>
             </div>
           </div>
+
+          {/* Statistics Chart */}
+          {statistics && statistics.length > 0 && (
+            <div className="card" style={{ marginTop: 'var(--space-lg)' }}>
+              <div className="card-header">
+                <h3><BarChart2 size={16} /> Statistik 6 Bulan Terakhir</h3>
+              </div>
+              <div style={{ height: 300, padding: 'var(--space-md) 0' }}>
+                <Bar data={chartData} options={chartOptions} />
+              </div>
+            </div>
+          )}
 
           {/* Active Loans */}
           {active_loans.length > 0 && (
@@ -243,6 +369,11 @@ export default function MemberPortalPage() {
       {/* ── TAB: Loans ── */}
       {tab === 'loans' && (
         <div className="portal-loans">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-md)' }}>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowApplyModal(true)}>
+              <Plus size={14} /> Ajukan Pinjaman
+            </button>
+          </div>
           {loansLoading ? (
             <div className="page-loading" style={{ minHeight: 200 }}><div className="spinner" /></div>
           ) : loans.length === 0 ? (
@@ -324,6 +455,95 @@ export default function MemberPortalPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Loan Application Modal */}
+      {showApplyModal && (
+        <div className="modal-overlay" onClick={() => setShowApplyModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+            <div className="modal-header">
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CreditCard size={18} /> Ajukan Pinjaman
+              </h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowApplyModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleApplyLoan}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Jumlah Pinjaman (Rp) *</label>
+                  <input type="number" className="form-input" placeholder="Min. Rp 100.000"
+                    value={applyForm.principal_amount}
+                    onChange={e => setApplyForm(f => ({ ...f, principal_amount: e.target.value }))}
+                    min={100000} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Jangka Waktu (bulan) *</label>
+                  <input type="number" className="form-input" placeholder="1 - 120 bulan"
+                    value={applyForm.term_months}
+                    onChange={e => setApplyForm(f => ({ ...f, term_months: e.target.value }))}
+                    min={1} max={120} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Keperluan / Tujuan</label>
+                  <textarea className="form-input" rows={3} placeholder="Opsional"
+                    value={applyForm.purpose}
+                    onChange={e => setApplyForm(f => ({ ...f, purpose: e.target.value }))} />
+                </div>
+
+                {/* Document Upload Section */}
+                <div className="form-group">
+                  <label className="form-label">Dokumen Persyaratan</label>
+                  <p className="text-xs text-muted" style={{ marginBottom: 'var(--space-sm)' }}>
+                    Upload KTP, Slip Gaji, Surat Permohonan, dll. Maks 5 file (PDF/JPG/PNG, maks 500KB/file)
+                  </p>
+
+                  {applyDocs.length > 0 && (
+                    <div className="doc-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: 'var(--space-sm)' }}>
+                      {applyDocs.map((doc, idx) => (
+                        <div key={idx} className="doc-item card" style={{
+                          display: 'flex', alignItems: 'center', gap: '0.5rem',
+                          padding: '0.5rem 0.75rem', fontSize: '0.85rem'
+                        }}>
+                          <select className="form-input" style={{ flex: '0 0 140px', padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                            value={doc.type} onChange={e => handleDocTypeChange(idx, e.target.value)}>
+                            {DOC_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </select>
+                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                            title={doc.file.name}>{doc.file.name}</span>
+                          <span className="text-xs text-muted">{(doc.file.size / 1024).toFixed(0)}KB</span>
+                          <button type="button" className="btn btn-ghost btn-icon" style={{ padding: '0.2rem' }}
+                            onClick={() => handleRemoveDoc(idx)}>
+                            <Trash2 size={14} style={{ color: 'var(--danger)' }} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {applyDocs.length < 5 && (
+                    <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Upload size={14} /> Pilih File
+                      <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleAddDoc} style={{ display: 'none' }} />
+                    </label>
+                  )}
+                </div>
+
+                <p className="text-xs text-muted" style={{ marginTop: 'var(--space-sm)' }}>
+                  Suku bunga dan biaya administrasi akan ditentukan oleh admin saat persetujuan.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowApplyModal(false)}>Batal</button>
+                <button type="submit" className="btn btn-primary" disabled={applying}>
+                  {applying ? <><Loader size={14} className="spin" /> Mengirim...</> : 'Ajukan'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

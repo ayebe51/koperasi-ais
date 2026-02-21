@@ -79,6 +79,14 @@ class LoanService
                 'approved_at' => now(),
             ]);
 
+            \App\Models\Notification::create([
+                'user_id' => $loan->member->user_id,
+                'type' => 'LOAN_APPROVED',
+                'title' => 'Pinjaman Disetujui',
+                'message' => "Pengajuan pinjaman Anda dengan nomor {$loan->loan_number} telah disetujui.",
+                'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
+            ]);
+
             // Generate amortization schedule
             $schedule = $this->amortizationEngine->generateSchedule(
                 (float) $loan->principal_amount,

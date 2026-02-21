@@ -6,7 +6,7 @@ import api from '../lib/api';
 import {
   LayoutDashboard, Users, Wallet, Landmark, BookOpen, FileText,
   Store, TrendingUp, Settings, LogOut, Menu, X, ChevronDown,
-  Receipt, BarChart3, Calculator, QrCode, UserCircle, Sun, Moon, Edit2, KeyRound
+  Receipt, BarChart3, Calculator, QrCode, UserCircle, Sun, Moon, Edit2, KeyRound, HelpCircle
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
 import GlobalSearch from '../components/GlobalSearch/GlobalSearch';
@@ -15,7 +15,7 @@ import NotificationBell from '../components/NotificationBell/NotificationBell';
 import './AppLayout.css';
 
 const menuItems = [
-  { to: '/',                  icon: LayoutDashboard, label: 'Dashboard',             roles: null },
+  { to: '/',                  icon: LayoutDashboard, label: 'Dashboard',             roles: ['ADMIN','MANAGER','TELLER','ACCOUNTANT'] },
   { to: '/portal',             icon: Wallet,          label: 'Portal Saya',           roles: ['MEMBER'] },
   { to: '/profil',             icon: UserCircle,      label: 'Akun Saya',             roles: null },
   { to: '/anggota',           icon: Users,           label: 'Keanggotaan',           roles: ['ADMIN','MANAGER','TELLER'] },
@@ -49,6 +49,7 @@ const menuItems = [
   { to: '/users',              icon: Settings,        label: 'User Management',       roles: ['ADMIN'] },
   { to: '/activity-log',       icon: FileText,        label: 'Log Aktivitas',         roles: ['ADMIN','MANAGER'] },
   { to: '/settings',            icon: Settings,        label: 'Pengaturan',            roles: ['ADMIN'] },
+  { to: '/panduan',              icon: HelpCircle,      label: 'Panduan',               roles: null },
 ];
 
 export default function AppLayout() {

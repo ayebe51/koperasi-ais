@@ -29,7 +29,16 @@ class LoanResource extends JsonResource
             'loan_date' => $this->loan_date?->format('Y-m-d'),
             'approved_at' => $this->approved_at?->toISOString(),
             'purpose' => $this->purpose,
-            'schedule' => $this->when($this->relationLoaded('schedules'), function () {
+            'rejection_reason' => $this->rejection_reason,
+            'documents' => $this->whenLoaded('documents', function () {
+                return $this->documents->map(fn($d) => [
+                    'id' => $d->id,
+                    'document_type' => $d->document_type,
+                    'file_name' => $d->file_name,
+                    'file_path' => $d->file_path,
+                ]);
+            }),
+            'schedule' => $this->whenLoaded('schedules', function () {
                 return $this->schedules->map(fn($s) => [
                     'installment_no' => $s->installment_no,
                     'due_date' => $s->due_date->format('Y-m-d'),

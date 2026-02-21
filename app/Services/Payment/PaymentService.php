@@ -87,13 +87,17 @@ class PaymentService
         $stringToSign = "POST:{$requestTarget}::{$digest}:{$timestamp}";
         $signature = base64_encode(hash_hmac('sha512', $stringToSign, $this->secretKey, true));
 
-        $response = Http::withHeaders([
+        $http = Http::withHeaders([
             'X-PARTNER-ID' => $this->clientId,
             'X-EXTERNAL-ID' => $externalId,
             'X-TIMESTAMP' => $timestamp,
             'X-SIGNATURE' => $signature,
             'Content-Type' => 'application/json',
-        ])->post("{$this->baseUrl}{$requestTarget}", $requestBody);
+        ]);
+        if (!config('doku.is_production')) {
+            $http = $http->withoutVerifying();
+        }
+        $response = $http->post("{$this->baseUrl}{$requestTarget}", $requestBody);
 
         if (!$response->successful()) {
             Log::error('DOKU QRIS charge failed', [
@@ -227,13 +231,17 @@ class PaymentService
         $stringToSign = "POST:{$requestTarget}::{$digest}:{$timestamp}";
         $signature = base64_encode(hash_hmac('sha512', $stringToSign, $this->secretKey, true));
 
-        $response = Http::withHeaders([
+        $http = Http::withHeaders([
             'X-PARTNER-ID' => $this->clientId,
             'X-EXTERNAL-ID' => $externalId,
             'X-TIMESTAMP' => $timestamp,
             'X-SIGNATURE' => $signature,
             'Content-Type' => 'application/json',
-        ])->post("{$this->baseUrl}{$requestTarget}", $requestBody);
+        ]);
+        if (!config('doku.is_production')) {
+            $http = $http->withoutVerifying();
+        }
+        $response = $http->post("{$this->baseUrl}{$requestTarget}", $requestBody);
 
         if ($response->successful()) {
             $statusData = $response->json();

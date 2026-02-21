@@ -153,6 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ─── Dashboard ───
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+    Route::get('/dashboard/trends', [DashboardController::class, 'trends']);
 
     // ─── Laporan Unit Usaha ───
     Route::prefix('reports')->middleware('role:ADMIN,MANAGER,ACCOUNTANT')->group(function () {
@@ -164,7 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('receipts')->group(function () {
         Route::get('/saving/{id}', [ReceiptController::class, 'saving']);
         Route::get('/loan-payment/{id}', [ReceiptController::class, 'loanPayment']);
-        Route::get('/sale/{id}', [ReceiptController::class, 'sale']);
+        Route::get('/{type}/{id}', [ReceiptController::class, 'show']);
     });
 
     // ─── Payments (QRIS) ───
@@ -186,6 +187,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [MemberPortalController::class, 'dashboard']);
         Route::get('/savings', [MemberPortalController::class, 'savings']);
         Route::get('/loans', [MemberPortalController::class, 'loans']);
+        Route::post('/loans/apply', [MemberPortalController::class, 'applyLoan']);
     });
 
     // ─── User Management ───

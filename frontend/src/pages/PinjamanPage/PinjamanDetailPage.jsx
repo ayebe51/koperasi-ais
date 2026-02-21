@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { formatRupiah, formatDate, statusBadge } from '../../lib/utils';
 import { useAuth } from '../../contexts/AuthContext';
-import { ArrowLeft, CheckCircle, XCircle, DollarSign, CreditCard, AlertTriangle, Printer, Calendar } from 'lucide-react';
+import { ArrowLeft, CheckCircle, XCircle, DollarSign, CreditCard, AlertTriangle, Printer, Calendar, FileText } from 'lucide-react';
 import ReceiptModal from '../../components/Receipt/ReceiptModal';
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import './PinjamanPage.css';
@@ -19,12 +19,18 @@ export default function PinjamanDetailPage() {
   const [payLoading, setPayLoading] = useState(false);
   const [receiptId, setReceiptId] = useState(null);
   const [schedule, setSchedule] = useState(null);
+  const [showReject, setShowReject] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   const fetchLoan = async () => {
     setLoading(true);
     try {
       const res = await api.get(`/loans/${id}`);
-      setLoan(res.data.data);
+      setLoan({
+        ...res.data.data.loan,
+        remaining_balance: res.data.data.outstanding_balance
+      });
     } catch { navigate('/pinjaman'); }
     setLoading(false);
   };
@@ -41,9 +47,16 @@ export default function PinjamanDetailPage() {
     if (!confirm('Setujui pinjaman ini?')) return;
     try { await api.post(`/loans/${id}/approve`); fetchLoan(); } catch {}
   };
-  const handleReject = async () => {
-    if (!confirm('Tolak pinjaman ini?')) return;
-    try { await api.post(`/loans/${id}/reject`); fetchLoan(); } catch {}
+  const handleReject = async (e) => {
+    e.preventDefault();
+    setRejectLoading(true);
+    try {
+      await api.post(`/loans/${id}/reject`, { rejection_reason: rejectReason });
+      setShowReject(false);
+      setRejectReason('');
+      fetchLoan();
+    } catch {}
+    setRejectLoading(false);
   };
   const handlePayment = async (e) => {
     e.preventDefault();
@@ -60,7 +73,7 @@ export default function PinjamanDetailPage() {
   if (loading) return <div className="page-loading"><div className="spinner" /><p>Memuat data...</p></div>;
   if (!loan) return null;
 
-  const progress = loan.amount > 0 ? ((loan.amount - loan.remaining_balance) / loan.amount * 100) : 0;
+  const progress = loan.principal_amount > 0 ? ((loan.principal_amount - loan.remaining_balance) / loan.principal_amount * 100) : 0;
 
   return (
     <div className="page">
@@ -82,7 +95,7 @@ export default function PinjamanDetailPage() {
               <button className="btn btn-primary" onClick={handleApprove}>
                 <CheckCircle size={14} /> Setujui
               </button>
-              <button className="btn btn-danger" onClick={handleReject}>
+              <button className="btn btn-danger" onClick={() => setShowReject(true)}>
                 <XCircle size={14} /> Tolak
               </button>
             </>
@@ -101,11 +114,15 @@ export default function PinjamanDetailPage() {
           <h4 style={{ marginBottom: 'var(--space-lg)' }}>Informasi Pinjaman</h4>
           <div className="info-rows">
             <div className="info-row"><span>Status</span><span className={`badge badge-${statusBadge(loan.status)}`}>{loan.status}</span></div>
-            <div className="info-row"><span>Plafon</span><strong>{formatRupiah(loan.amount)}</strong></div>
-            <div className="info-row"><span>Tenor</span><strong>{loan.tenor_months} bulan</strong></div>
+            {loan.status === 'REJECTED' && loan.rejection_reason && (
+              <div className="info-row"><span>Alasan Penolakan</span><strong style={{ color: 'var(--danger)' }}>{loan.rejection_reason}</strong></div>
+            )}
+            <div className="info-row"><span>Plafon</span><strong>{formatRupiah(loan.principal_amount)}</strong></div>
+            <div className="info-row"><span>Tenor</span><strong>{loan.term_months} bulan</strong></div>
             <div className="info-row"><span>Bunga</span><strong>{loan.interest_rate}% / bulan</strong></div>
-            <div className="info-row"><span>Tgl Pengajuan</span><strong>{formatDate(loan.application_date)}</strong></div>
-            <div className="info-row"><span>Tgl Pencairan</span><strong>{formatDate(loan.disbursement_date)}</strong></div>
+            <div className="info-row"><span>Tujuan</span><strong>{loan.purpose || '-'}</strong></div>
+            <div className="info-row"><span>Tgl Pengajuan</span><strong>{formatDate(loan.created_at)}</strong></div>
+            <div className="info-row"><span>Tgl Pencairan</span><strong>{formatDate(loan.loan_date) || '-'}</strong></div>
             <div className="info-row"><span>Kolektibilitas</span><strong>{loan.collectibility || '-'}</strong></div>
           </div>
         </div>
@@ -120,10 +137,31 @@ export default function PinjamanDetailPage() {
             <div className="progress-label">{progress.toFixed(1)}% lunas</div>
           </div>
           <div className="info-rows" style={{ marginTop: 'var(--space-lg)' }}>
-            <div className="info-row"><span>Total Dibayar</span><strong style={{ color: 'var(--success)' }}>{formatRupiah(loan.amount - loan.remaining_balance)}</strong></div>
+            <div className="info-row"><span>Total Dibayar</span><strong style={{ color: 'var(--success)' }}>{formatRupiah(loan.principal_amount - loan.remaining_balance)}</strong></div>
             <div className="info-row"><span>Sisa Pinjaman</span><strong style={{ color: 'var(--warning)' }}>{formatRupiah(loan.remaining_balance)}</strong></div>
           </div>
         </div>
+
+        {/* Documents */}
+        {loan.documents && loan.documents.length > 0 && (
+          <div className="card" style={{ gridColumn: '1 / -1' }}>
+            <h4 style={{ marginBottom: 'var(--space-md)' }}>Dokumen Persyaratan</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-sm)' }}>
+              {loan.documents.map(doc => (
+                <a key={doc.id} href={`/storage/${doc.file_path}`} target="_blank" rel="noreferrer"
+                  className="card" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', border: '1px solid var(--border)' }}>
+                  <div style={{ background: 'var(--bg-muted)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', color: 'var(--brand)' }}>
+                    <FileText size={20} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>{doc.document_type}</div>
+                    <div style={{ fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.file_name}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Jadwal Angsuran */}
@@ -242,6 +280,33 @@ export default function PinjamanDetailPage() {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowPayment(false)}>Batal</button>
                 <button type="submit" className="btn btn-primary" disabled={payLoading}>
                   {payLoading ? 'Memproses...' : 'Bayar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showReject && (
+        <div className="modal-overlay" onClick={() => setShowReject(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3>Tolak Pinjaman</h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowReject(false)}><XCircle size={18} /></button>
+            </div>
+            <form onSubmit={handleReject}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Alasan Penolakan</label>
+                  <textarea className="form-input" rows={3} placeholder="Masukkan alasan kenapa pinjaman ditolak"
+                    value={rejectReason} onChange={e => setRejectReason(e.target.value)} required />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowReject(false)}>Batal</button>
+                <button type="submit" className="btn btn-danger" disabled={rejectLoading}>
+                  {rejectLoading ? 'Memproses...' : 'Tolak Pinjaman'}
                 </button>
               </div>
             </form>

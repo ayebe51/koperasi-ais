@@ -75,15 +75,31 @@ class LoanController extends Controller
     /**
      * POST /api/loans/{id}/reject
      */
-    public function reject(string $id): JsonResponse
+    public function reject(Request $request, string $id): JsonResponse
     {
-        $loan = Loan::findOrFail($id);
+        $loan = Loan::with('member')->findOrFail($id);
+
+        $validated = $request->validate([
+            'rejection_reason' => 'nullable|string|max:500'
+        ]);
 
         if ($loan->status->value !== 'PENDING') {
             return $this->error('Hanya pinjaman PENDING yang bisa ditolak', 422);
         }
 
-        $loan->update(['status' => 'REJECTED']);
+        $loan->update([
+            'status' => 'REJECTED',
+            'rejection_reason' => $validated['rejection_reason'] ?? null
+        ]);
+
+        \App\Models\Notification::create([
+            'user_id' => $loan->member->user_id,
+            'type' => 'LOAN_REJECTED',
+            'title' => 'Pinjaman Ditolak',
+            'message' => "Pengajuan pinjaman {$loan->loan_number} ditolak. Alasan: " . ($validated['rejection_reason'] ?? 'Tidak ada'),
+            'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
+        ]);
+
         return $this->success(new LoanResource($loan), 'Pinjaman ditolak');
     }
 
@@ -114,7 +130,7 @@ class LoanController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $loan = Loan::with(['member', 'schedules', 'payments', 'ckpnProvisions'])->findOrFail($id);
+        $loan = Loan::with(['member', 'schedules', 'payments', 'ckpnProvisions', 'documents'])->findOrFail($id);
 
         return $this->success([
             'loan' => new LoanResource($loan),

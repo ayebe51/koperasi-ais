@@ -1,368 +1,267 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../lib/api';
+import { formatRupiah, formatDate } from '../../lib/utils';
+import { CreditCard, QrCode, Clock, CheckCircle, XCircle, History, Loader } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import './PembayaranPage.css';
 
-const PAYMENT_TYPES = [
-  { value: 'SIMPANAN_POKOK',    label: 'Simpanan Pokok',    icon: '🏦' },
-  { value: 'SIMPANAN_WAJIB',    label: 'Simpanan Wajib',    icon: '📋' },
-  { value: 'SIMPANAN_SUKARELA', label: 'Simpanan Sukarela', icon: '💰' },
-  { value: 'ANGSURAN_PINJAMAN', label: 'Angsuran Pinjaman', icon: '📄' },
-];
-
-const STATUS_LABELS = {
-  PAID: 'Berhasil',
-  PENDING: 'Menunggu',
-  EXPIRED: 'Kedaluwarsa',
-  FAILED: 'Gagal',
-};
-
-const TYPE_LABELS = {
-  SIMPANAN_POKOK: 'Simpanan Pokok',
-  SIMPANAN_WAJIB: 'Simpanan Wajib',
-  SIMPANAN_SUKARELA: 'Simpanan Sukarela',
-  ANGSURAN_PINJAMAN: 'Angsuran Pinjaman',
-};
-
-function formatRupiah(num) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '-';
-  return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
 export default function PembayaranPage() {
-  // ── State ──
-  const [step, setStep] = useState('form'); // form | qr | result
-  const [paymentType, setPaymentType] = useState('');
+  const toast = useToast();
+
+  // Form
+  const [paymentType, setPaymentType] = useState('SIMPANAN_SUKARELA');
   const [amount, setAmount] = useState('');
   const [loanId, setLoanId] = useState('');
   const [loans, setLoans] = useState([]);
-  const [nextInstallment, setNextInstallment] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  // QR state
-  const [qrData, setQrData] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  // Result state
-  const [resultStatus, setResultStatus] = useState('');
+  // QR / Status
+  const [qrData, setQrData] = useState(null); // { payment_id, qris_url, amount, expired_at, status }
+  const [paymentStatus, setPaymentStatus] = useState(null); // 'PENDING' | 'PAID' | 'EXPIRED'
+  const pollingRef = useRef(null);
 
   // History
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Polling ref
-  const pollRef = useRef(null);
-  const timerRef = useRef(null);
-
-  // ── Load active loans ──
+  // Load member's active loans for angsuran
   useEffect(() => {
-    if (paymentType === 'ANGSURAN_PINJAMAN') {
-      api.get('/loans', { params: { status: 'ACTIVE' } })
-        .then(res => {
-          const data = res.data?.data || [];
-          setLoans(data);
-        })
-        .catch(() => setLoans([]));
-    }
-  }, [paymentType]);
+    api.get('/me/loans').then(res => {
+      const active = (res.data.data || []).filter(l => l.status === 'ACTIVE');
+      setLoans(active);
+    }).catch(() => {});
+    fetchHistory();
+  }, []);
 
-  // ── Load next installment when loan selected ──
-  useEffect(() => {
-    if (loanId) {
-      api.get(`/loans/${loanId}/schedule`)
-        .then(res => {
-          const schedules = res.data?.data?.schedule || [];
-          const next = schedules.find(s => !s.is_paid);
-          if (next) {
-            setNextInstallment(next);
-            const total = parseFloat(next.principal_amount) + parseFloat(next.interest_amount);
-            setAmount(String(Math.round(total)));
-          }
-        })
-        .catch(() => setNextInstallment(null));
-    } else {
-      setNextInstallment(null);
-    }
-  }, [loanId]);
+  // Cleanup polling on unmount
+  useEffect(() => () => { if (pollingRef.current) clearInterval(pollingRef.current); }, []);
 
-  // ── Load payment history ──
-  const loadHistory = useCallback(() => {
+  const fetchHistory = async () => {
     setHistoryLoading(true);
-    api.get('/payments/history')
-      .then(res => setHistory(res.data?.data || []))
-      .catch(() => {})
-      .finally(() => setHistoryLoading(false));
-  }, []);
-
-  useEffect(() => { loadHistory(); }, [loadHistory]);
-
-  // ── Cleanup polling/timer on unmount ──
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  // ── Create QRIS Payment ──
-  const handleCreateQris = async () => {
-    setError('');
-    if (!paymentType) { setError('Pilih jenis pembayaran'); return; }
-    if (!amount || parseInt(amount) < 1000) { setError('Minimum pembayaran Rp 1.000'); return; }
-    if (paymentType === 'ANGSURAN_PINJAMAN' && !loanId) { setError('Pilih pinjaman'); return; }
-
-    setLoading(true);
     try {
-      const payload = {
-        payment_type: paymentType,
-        amount: parseInt(amount),
-      };
-      if (paymentType === 'ANGSURAN_PINJAMAN') {
-        payload.loan_id = loanId;
-      }
+      const res = await api.get('/payments/history', { params: { per_page: 10 } });
+      setHistory(res.data.data || []);
+    } catch {}
+    setHistoryLoading(false);
+  };
 
-      const res = await api.post('/payments/qris', payload);
-      const data = res.data?.data;
-      setQrData(data);
-      setStep('qr');
-
-      // Start countdown timer
-      const expiresAt = new Date(data.expired_at);
-      const updateTimer = () => {
-        const diff = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-        setTimeLeft(diff);
-        if (diff <= 0) {
-          clearInterval(timerRef.current);
-          clearInterval(pollRef.current);
-          setResultStatus('EXPIRED');
-          setStep('result');
-        }
-      };
-      updateTimer();
-      timerRef.current = setInterval(updateTimer, 1000);
-
-      // Start polling for status every 3 seconds
-      pollRef.current = setInterval(async () => {
-        try {
-          const statusRes = await api.get(`/payments/${data.payment_id}/status`);
-          const status = statusRes.data?.data?.status;
-          if (status === 'PAID') {
-            clearInterval(pollRef.current);
-            clearInterval(timerRef.current);
-            setResultStatus('PAID');
-            setStep('result');
-            loadHistory();
-          } else if (status === 'EXPIRED' || status === 'FAILED') {
-            clearInterval(pollRef.current);
-            clearInterval(timerRef.current);
-            setResultStatus(status);
-            setStep('result');
-          }
-        } catch { /* ignore polling errors */ }
-      }, 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Gagal membuat QRIS');
-    } finally {
-      setLoading(false);
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!amount || parseFloat(amount) < 1000) {
+      toast.error('Minimum pembayaran QRIS adalah Rp 1.000');
+      return;
     }
+    if (paymentType === 'ANGSURAN_PINJAMAN' && !loanId) {
+      toast.error('Pilih pinjaman untuk pembayaran angsuran');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const res = await api.post('/payments/qris', {
+        payment_type: paymentType,
+        amount: parseFloat(amount),
+        loan_id: paymentType === 'ANGSURAN_PINJAMAN' ? loanId : null,
+      });
+      const data = res.data.data;
+      setQrData(data);
+      setPaymentStatus('PENDING');
+      toast.success('QR Code berhasil dibuat! Silakan scan untuk membayar.');
+      startPolling(data.payment_id);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal membuat pembayaran QRIS');
+    }
+    setCreating(false);
   };
 
-  // ── Reset to form ──
-  const handleNewPayment = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (timerRef.current) clearInterval(timerRef.current);
-    setStep('form');
+  const startPolling = (paymentId) => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingRef.current = setInterval(async () => {
+      try {
+        const res = await api.get(`/payments/${paymentId}/status`);
+        const status = res.data.data?.status;
+        if (status === 'PAID') {
+          setPaymentStatus('PAID');
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+          toast.success('Pembayaran berhasil!');
+          fetchHistory();
+        } else if (status === 'EXPIRED' || status === 'FAILED') {
+          setPaymentStatus('EXPIRED');
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      } catch {}
+    }, 5000);
+  };
+
+  const resetPayment = () => {
+    if (pollingRef.current) clearInterval(pollingRef.current);
     setQrData(null);
-    setResultStatus('');
-    setPaymentType('');
+    setPaymentStatus(null);
     setAmount('');
-    setLoanId('');
-    setError('');
-    loadHistory();
   };
 
-  // ── Format timer ──
-  const formatTimer = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const statusLabel = {
+    PENDING: 'Menunggu Pembayaran',
+    PAID: 'Pembayaran Berhasil',
+    EXPIRED: 'Kedaluwarsa',
+    FAILED: 'Gagal',
+  };
+
+  const statusBadge = (s) => {
+    if (s === 'PAID') return 'success';
+    if (s === 'PENDING') return 'warning';
+    return 'danger';
   };
 
   return (
-    <div className="pembayaran-page">
-      <h2 style={{ marginBottom: '1.5rem' }}>💳 Pembayaran QRIS</h2>
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Pembayaran QRIS</h1>
+          <p className="page-subtitle">Bayar simpanan atau angsuran pinjaman melalui QRIS</p>
+        </div>
+      </div>
 
-      {/* ═══ STEP 1: Form ═══ */}
-      {step === 'form' && (
-        <>
-          {/* Payment Type Selection */}
-          <div className="payment-types">
-            {PAYMENT_TYPES.map(pt => (
-              <div
-                key={pt.value}
-                className={`payment-type-card ${paymentType === pt.value ? 'selected' : ''}`}
-                onClick={() => { setPaymentType(pt.value); setLoanId(''); setAmount(''); setNextInstallment(null); }}
-              >
-                <div className="card-icon">{pt.icon}</div>
-                <div className="card-label">{pt.label}</div>
-              </div>
-            ))}
-          </div>
+      <div className="payment-layout">
+        {/* Left: Payment Form */}
+        <div className="payment-form-card">
+          <h3><CreditCard size={18} /> Buat Pembayaran</h3>
+          <form onSubmit={handleCreate}>
+            <div className="form-group">
+              <label className="form-label">Jenis Pembayaran</label>
+              <select className="form-input" value={paymentType}
+                onChange={e => setPaymentType(e.target.value)} disabled={!!qrData}>
+                <option value="SIMPANAN_POKOK">Simpanan Pokok</option>
+                <option value="SIMPANAN_WAJIB">Simpanan Wajib</option>
+                <option value="SIMPANAN_SUKARELA">Simpanan Sukarela</option>
+                <option value="ANGSURAN_PINJAMAN">Angsuran Pinjaman</option>
+              </select>
+            </div>
 
-          {/* Form */}
-          {paymentType && (
-            <div className="payment-form-section">
-              <h3>Detail Pembayaran</h3>
-
-              {/* Loan selector for installment */}
-              {paymentType === 'ANGSURAN_PINJAMAN' && (
-                <div className="form-group">
-                  <label>Pilih Pinjaman</label>
-                  <select value={loanId} onChange={e => setLoanId(e.target.value)}>
-                    <option value="">-- Pilih pinjaman aktif --</option>
-                    {loans.map(loan => (
-                      <option key={loan.id} value={loan.id}>
-                        {loan.loan_number} — {formatRupiah(loan.principal_amount)}
-                      </option>
-                    ))}
-                  </select>
-                  {nextInstallment && (
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#94a3b8' }}>
-                      Angsuran ke-{nextInstallment.installment_number}: Pokok {formatRupiah(nextInstallment.principal_amount)} + Bunga {formatRupiah(nextInstallment.interest_amount)}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Amount */}
+            {paymentType === 'ANGSURAN_PINJAMAN' && (
               <div className="form-group">
-                <label>Jumlah Pembayaran (Rp)</label>
-                {paymentType === 'ANGSURAN_PINJAMAN' && nextInstallment ? (
-                  <div className="amount-display">{formatRupiah(amount)}</div>
-                ) : (
-                  <input
-                    type="number"
-                    min="1000"
-                    step="1000"
-                    value={amount}
-                    onChange={e => setAmount(e.target.value)}
-                    placeholder="Masukkan jumlah"
-                  />
+                <label className="form-label">Pinjaman</label>
+                <select className="form-input" value={loanId}
+                  onChange={e => setLoanId(e.target.value)} disabled={!!qrData}>
+                  <option value="">— Pilih Pinjaman —</option>
+                  {loans.map(l => (
+                    <option key={l.id} value={l.id}>
+                      {l.loan_number} — Sisa: {formatRupiah(l.remaining_balance)}
+                    </option>
+                  ))}
+                </select>
+                {loans.length === 0 && (
+                  <span className="text-xs text-muted">Tidak ada pinjaman aktif</span>
                 )}
               </div>
+            )}
 
-              {error && (
-                <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  ⚠️ {error}
-                </div>
-              )}
+            <div className="form-group">
+              <label className="form-label">Jumlah (Rp)</label>
+              <input type="number" className="form-input" placeholder="Minimum Rp 1.000"
+                value={amount} onChange={e => setAmount(e.target.value)}
+                min={1000} disabled={!!qrData} />
+            </div>
 
-              <button
-                className="btn-qris"
-                onClick={handleCreateQris}
-                disabled={loading}
-              >
-                {loading ? '⏳ Membuat QRIS...' : '📱 Bayar dengan QRIS'}
+            {!qrData ? (
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 'var(--space-md)' }}
+                disabled={creating}>
+                {creating ? <><Loader size={16} className="spin" /> Memproses...</> : <><QrCode size={16} /> Generate QR Code</>}
               </button>
-            </div>
-          )}
-        </>
-      )}
+            ) : (
+              <button type="button" className="btn btn-secondary" style={{ width: '100%', marginTop: 'var(--space-md)' }}
+                onClick={resetPayment}>
+                Buat Pembayaran Baru
+              </button>
+            )}
+          </form>
+        </div>
 
-      {/* ═══ STEP 2: QR Code Display ═══ */}
-      {step === 'qr' && qrData && (
-        <div className="qr-section">
-          <h3>Scan QR Code untuk Membayar</h3>
-          <p className="qr-subtitle">Gunakan aplikasi e-wallet (GoPay, OVO, DANA, ShopeePay, dll)</p>
+        {/* Right: QR Display */}
+        <div className="qr-card">
+          <h3><QrCode size={18} /> QR Code</h3>
+          <div className="qr-container">
+            {!qrData ? (
+              <div className="qr-placeholder">
+                <QrCode size={48} />
+                <span>QR Code akan tampil di sini</span>
+              </div>
+            ) : (
+              <>
+                {qrData.qris_url ? (
+                  <img src={qrData.qris_url} alt="QRIS QR Code" className="qr-image" />
+                ) : (
+                  <div className="qr-placeholder">
+                    <QrCode size={48} />
+                    <span className="text-sm">QR code tidak tersedia (mode simulasi)</span>
+                  </div>
+                )}
+                <div className="qr-amount">{formatRupiah(qrData.amount)}</div>
+                {qrData.expired_at && (
+                  <div className="qr-expire">Berlaku hingga: {formatDate(qrData.expired_at)}</div>
+                )}
+              </>
+            )}
 
-          <div className="qr-code-wrapper">
-            <img src={qrData.qris_url} alt="QRIS QR Code" />
-          </div>
-
-          <div className="qr-amount">{formatRupiah(qrData.amount)}</div>
-
-          <div className="qr-timer-label" style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.25rem' }}>
-            Sisa waktu
-          </div>
-          <div className={`qr-timer ${timeLeft < 60 ? 'expiring' : ''}`}>
-            {formatTimer(timeLeft)}
-          </div>
-
-          <div className="polling-indicator">
-            <span className="polling-dot"></span>
-            Menunggu pembayaran...
-          </div>
-
-          <div style={{ marginTop: '1.5rem' }}>
-            <button className="btn-new-payment" onClick={handleNewPayment}>
-              ← Batalkan
-            </button>
+            {paymentStatus === 'PENDING' && (
+              <div className="qr-status polling"><Clock size={14} /> Menunggu pembayaran...</div>
+            )}
+            {paymentStatus === 'PAID' && (
+              <div className="qr-status success"><CheckCircle size={14} /> Pembayaran berhasil!</div>
+            )}
+            {paymentStatus === 'EXPIRED' && (
+              <div className="qr-status expired"><XCircle size={14} /> QR Code kedaluwarsa</div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* ═══ STEP 3: Result ═══ */}
-      {step === 'result' && (
-        <div className={`payment-result ${resultStatus === 'PAID' ? 'success' : resultStatus === 'EXPIRED' ? 'expired' : 'failed'}`}>
-          <div className="result-icon">
-            {resultStatus === 'PAID' ? '✅' : resultStatus === 'EXPIRED' ? '⏰' : '❌'}
-          </div>
-          <div className="result-title">
-            {resultStatus === 'PAID' && 'Pembayaran Berhasil!'}
-            {resultStatus === 'EXPIRED' && 'Pembayaran Kedaluwarsa'}
-            {resultStatus === 'FAILED' && 'Pembayaran Gagal'}
-          </div>
-          <div className="result-desc">
-            {resultStatus === 'PAID' && 'Dana telah diterima dan dicatat dalam sistem.'}
-            {resultStatus === 'EXPIRED' && 'Silakan buat pembayaran baru.'}
-            {resultStatus === 'FAILED' && 'Terjadi kesalahan. Silakan coba lagi.'}
-          </div>
-          {qrData && (
-            <div style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: '#94a3b8' }}>
-              Order ID: {qrData.order_id} &middot; {formatRupiah(qrData.amount)}
-            </div>
-          )}
-          <button className="btn-new-payment" onClick={handleNewPayment}>
-            Buat Pembayaran Baru
-          </button>
-        </div>
-      )}
-
-      {/* ═══ Payment History ═══ */}
-      <div className="history-section">
-        <h3>📜 Riwayat Pembayaran QRIS</h3>
-        {historyLoading ? (
-          <div className="empty-history">Memuat...</div>
-        ) : history.length === 0 ? (
-          <div className="empty-history">Belum ada riwayat pembayaran</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="history-table">
+      {/* Payment History */}
+      <div className="payment-history">
+        <h3><History size={18} /> Riwayat Pembayaran</h3>
+        <div className="card" style={{ padding: 0 }}>
+          <div className="table-container">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Tanggal</th>
+                  <th>Order ID</th>
                   <th>Jenis</th>
-                  <th>Jumlah</th>
+                  <th className="text-right">Jumlah</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {history.map(p => (
+                {historyLoading ? (
+                  <tr><td colSpan={5} className="text-center" style={{ padding: '2rem' }}>
+                    <div className="spinner" style={{ margin: '0 auto' }} />
+                  </td></tr>
+                ) : history.length === 0 ? (
+                  <tr><td colSpan={5} className="text-center text-muted" style={{ padding: '2rem' }}>
+                    Belum ada riwayat pembayaran
+                  </td></tr>
+                ) : history.map(p => (
                   <tr key={p.id}>
-                    <td>{formatDate(p.created_at)}</td>
-                    <td>{TYPE_LABELS[p.payment_type] || p.payment_type}</td>
-                    <td>{formatRupiah(p.amount)}</td>
-                    <td><span className={`status-badge ${p.status}`}>{STATUS_LABELS[p.status] || p.status}</span></td>
+                    <td className="text-sm">{formatDate(p.created_at)}</td>
+                    <td className="font-mono text-sm">{p.midtrans_order_id || p.id?.slice(0, 8)}</td>
+                    <td>
+                      <span className={`payment-type-badge ${p.payment_type?.includes('SIMPANAN') ? 'simpanan' : 'angsuran'}`}>
+                        {p.payment_type === 'SIMPANAN_POKOK' ? 'Simp. Pokok'
+                          : p.payment_type === 'SIMPANAN_WAJIB' ? 'Simp. Wajib'
+                          : p.payment_type === 'SIMPANAN_SUKARELA' ? 'Simp. Sukarela'
+                          : 'Angsuran'}
+                      </span>
+                    </td>
+                    <td className="text-right font-mono">{formatRupiah(p.amount)}</td>
+                    <td><span className={`badge badge-${statusBadge(p.status)}`}>{p.status}</span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

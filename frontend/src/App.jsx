@@ -27,6 +27,7 @@ import ProfilPage from './pages/ProfilPage/ProfilPage';
 import UserManagementPage from './pages/UserPage/UserManagementPage';
 import SettingsPage from './pages/SettingsPage/SettingsPage';
 import ActivityLogPage from './pages/ActivityLogPage/ActivityLogPage';
+import PanduanPage from './pages/PanduanPage/PanduanPage';
 import NotFoundPage from './pages/NotFoundPage/NotFoundPage';
 import MemberPortalPage from './pages/PortalPage/MemberPortalPage';
 import ActivateMemberPage from './pages/ActivatePage/ActivateMemberPage';
@@ -105,6 +106,9 @@ export default function App() {
 
             {/* Activity Log — ADMIN, MANAGER */}
             <Route path="activity-log" element={<ProtectedRoute roles={['ADMIN','MANAGER']}><ActivityLogPage /></ProtectedRoute>} />
+
+            {/* Panduan — All authenticated */}
+            <Route path="panduan" element={<PanduanPage />} />
           </Route>
 
           {/* 404 */}

@@ -39,9 +39,9 @@ class DashboardController extends Controller
         $simpananSukarela = $this->latestSavingBalance('SUKARELA');
 
         // ─── Pinjaman ───
-        $pinjamanAktif = Loan::where('status', LoanStatus::ACTIVE)->count();
-        $outstandingPinjaman = (float) Loan::where('status', LoanStatus::ACTIVE)
-            ->sum('remaining_balance');
+        $activeLoans = Loan::where('status', LoanStatus::ACTIVE)->get();
+        $pinjamanAktif = $activeLoans->count();
+        $outstandingPinjaman = $activeLoans->sum(fn($loan) => $loan->getOutstandingBalance());
         $pinjamanPending = Loan::where('status', LoanStatus::PENDING)->count();
 
         // ─── Toko ───
@@ -138,4 +138,43 @@ class DashboardController extends Controller
 
         return round($total, 2);
     }
+
+    /**
+     * GET /api/dashboard/trends
+     * Monthly aggregated data for the last 6 months
+     */
+    public function trends(): JsonResponse
+    {
+        $months = [];
+        $simpanan = [];
+        $pinjaman = [];
+        $penjualan = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $start = $date->copy()->startOfMonth()->toDateString();
+            $end = $date->copy()->endOfMonth()->toDateString();
+            $label = $date->format('M Y');
+
+            $months[] = $label;
+
+            $simpanan[] = round((float) Saving::where('transaction_type', 'DEPOSIT')
+                ->whereBetween('transaction_date', [$start, $end])
+                ->sum('amount'), 2);
+
+            $pinjaman[] = round((float) Loan::whereBetween('disbursement_date', [$start, $end])
+                ->sum('amount'), 2);
+
+            $penjualan[] = round((float) Sale::whereBetween('sale_date', [$start, $end])
+                ->sum('total'), 2);
+        }
+
+        return $this->success([
+            'months' => $months,
+            'simpanan' => $simpanan,
+            'pinjaman' => $pinjaman,
+            'penjualan' => $penjualan,
+        ], 'Trend 6 bulan terakhir');
+    }
 }
+

@@ -27,6 +27,7 @@ class Loan extends Model
         'status',
         'collectibility',
         'purpose',
+        'rejection_reason',
         'approved_by',
         'approved_at',
     ];
@@ -72,6 +73,11 @@ class Loan extends Model
     public function ckpnProvisions()
     {
         return $this->hasMany(CKPNProvision::class);
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(LoanDocument::class);
     }
 
     public function getOutstandingBalance(): float

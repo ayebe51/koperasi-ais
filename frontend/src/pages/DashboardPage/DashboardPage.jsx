@@ -11,7 +11,7 @@ import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement,
   ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler
 } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import Skeleton from '../../components/Skeleton/Skeleton';
 import './DashboardPage.css';
 
@@ -24,13 +24,17 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
+  const [trends, setTrends] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/dashboard/stats')
-      .then(res => setStats(res.data.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      api.get('/dashboard/stats'),
+      api.get('/dashboard/trends').catch(() => ({ data: { data: null } })),
+    ]).then(([statsRes, trendsRes]) => {
+      setStats(statsRes.data.data);
+      setTrends(trendsRes.data.data);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   if (loading) return (
@@ -255,6 +259,63 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Monthly Trend Line Chart */}
+      {trends && (
+        <div className="card" style={{ marginTop: 'var(--space-lg)' }}>
+          <div className="card-header">
+            <h3 className="card-title">Tren 6 Bulan Terakhir</h3>
+          </div>
+          <div className="chart-container bar" style={{ height: 280 }}>
+            <Line
+              data={{
+                labels: trends.months,
+                datasets: [
+                  {
+                    label: 'Simpanan',
+                    data: trends.simpanan,
+                    borderColor: '#0891b2',
+                    backgroundColor: 'rgba(8,145,178,0.08)',
+                    tension: 0.3,
+                    fill: true,
+                  },
+                  {
+                    label: 'Pinjaman',
+                    data: trends.pinjaman,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.08)',
+                    tension: 0.3,
+                    fill: true,
+                  },
+                  {
+                    label: 'Penjualan',
+                    data: trends.penjualan,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.08)',
+                    tension: 0.3,
+                    fill: true,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { position: 'bottom', labels: { color: textSecondary, padding: 16, usePointStyle: true } },
+                  tooltip: {
+                    callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${formatRupiah(ctx.raw)}` },
+                    backgroundColor: bgSecondary, borderColor: borderColor, borderWidth: 1,
+                  },
+                },
+                scales: {
+                  x: { ticks: { color: textMuted }, grid: { display: false } },
+                  y: { ticks: { color: textMuted, callback: (v) => formatRupiah(v) }, grid: { color: 'rgba(148,163,184,0.08)' } },
+                },
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Quick Info Cards */}
       <div className="grid grid-3 dashboard-info">
