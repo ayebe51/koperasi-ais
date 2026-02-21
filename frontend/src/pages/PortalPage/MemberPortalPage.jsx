@@ -27,6 +27,11 @@ export default function MemberPortalPage() {
   const [savingsLoading, setSavingsLoading] = useState(false);
   const [loansLoading, setLoansLoading] = useState(false);
 
+  // Manual Payment Upload Modal
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payForm, setPayForm] = useState({ payment_type: '', amount: '', loan_id: '', payment_method: 'TRANSFER', proof_file: null, notes: '' });
+  const [payLoading, setPayLoading] = useState(false);
+
   // Loan application
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyForm, setApplyForm] = useState({ principal_amount: '', term_months: '', purpose: '' });
@@ -107,6 +112,43 @@ export default function MemberPortalPage() {
       toast.error(err.response?.data?.message || 'Gagal mengajukan pinjaman');
     }
     setApplying(false);
+  };
+
+  const handleManualPayment = async (e) => {
+    e.preventDefault();
+    if (!payForm.proof_file) return toast.error('Harap unggah bukti pembayaran');
+    setPayLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('payment_type', payForm.payment_type);
+      fd.append('amount', payForm.amount);
+      if (payForm.loan_id) fd.append('loan_id', payForm.loan_id);
+      fd.append('payment_method', payForm.payment_method);
+      fd.append('proof_image', payForm.proof_file);
+      if (payForm.notes) fd.append('notes', payForm.notes);
+
+      await api.post('/payments/manual', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Bukti pembayaran berhasil dikirim! Menunggu konfirmasi Admin.');
+      setShowPayModal(false);
+
+      // refresh dashboard
+      api.get('/me/dashboard').then(res => setDashboard(res.data.data));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mengirim pembayaran');
+    }
+    setPayLoading(false);
+  };
+
+  const openPayLoan = (loan) => {
+    setPayForm({
+      payment_type: 'ANGSURAN_PINJAMAN',
+      amount: loan.monthly_payment,
+      loan_id: loan.id,
+      payment_method: 'TRANSFER',
+      proof_file: null,
+      notes: `Angsuran bulan ini`
+    });
+    setShowPayModal(true);
   };
 
   if (loading) return <div className="page-loading"><div className="spinner" /></div>;
@@ -210,14 +252,29 @@ export default function MemberPortalPage() {
             <div className="portal-card savings-pokok">
               <span className="portal-card-label">Simpanan Pokok</span>
               <span className="portal-card-value">{formatRupiah(savingsSummary.pokok)}</span>
+              <button
+                className="btn btn-outline btn-sm mt-3 border-white text-white opacity-80 hover-opacity-100"
+                onClick={() => setPayForm({ payment_type: 'SIMPANAN_POKOK', amount: '', loan_id: '', payment_method: 'TRANSFER', proof_file: null, notes: '' }) || setShowPayModal(true)}>
+                Setor Manual
+              </button>
             </div>
             <div className="portal-card savings-wajib">
               <span className="portal-card-label">Simpanan Wajib</span>
               <span className="portal-card-value">{formatRupiah(savingsSummary.wajib)}</span>
+              <button
+                className="btn btn-outline btn-sm mt-3 border-white text-white opacity-80 hover-opacity-100"
+                onClick={() => setPayForm({ payment_type: 'SIMPANAN_WAJIB', amount: '', loan_id: '', payment_method: 'TRANSFER', proof_file: null, notes: '' }) || setShowPayModal(true)}>
+                Setor Manual
+              </button>
             </div>
             <div className="portal-card savings-sukarela">
               <span className="portal-card-label">Simpanan Sukarela</span>
               <span className="portal-card-value">{formatRupiah(savingsSummary.sukarela)}</span>
+              <button
+                className="btn btn-outline btn-sm mt-3 border-white text-white opacity-80 hover-opacity-100"
+                onClick={() => setPayForm({ payment_type: 'SIMPANAN_SUKARELA', amount: '', loan_id: '', payment_method: 'TRANSFER', proof_file: null, notes: '' }) || setShowPayModal(true)}>
+                Setor Manual
+              </button>
             </div>
             <div className="portal-card savings-total">
               <span className="portal-card-label">Total Simpanan</span>
@@ -415,6 +472,14 @@ export default function MemberPortalPage() {
                 </div>
               </div>
 
+              {loan.status === 'ACTIVE' && loan.outstanding_balance > 0 && (
+                <div style={{ marginTop: 'var(--space-md)', display: 'flex', justifyContent: 'flex-start' }}>
+                  <button className="btn btn-outline btn-sm" onClick={() => openPayLoan(loan)}>
+                     Bayar Manual (Upload Bukti)
+                  </button>
+                </div>
+              )}
+
               {/* Schedule */}
               {loan.schedules && loan.schedules.length > 0 && (
                 <details className="portal-schedule-details">
@@ -541,6 +606,67 @@ export default function MemberPortalPage() {
                 <button type="submit" className="btn btn-primary" disabled={applying}>
                   {applying ? <><Loader size={14} className="spin" /> Mengirim...</> : 'Ajukan'}
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Payment Modal */}
+      {showPayModal && (
+        <div className="modal-overlay" onClick={() => setShowPayModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
+            <div className="modal-header">
+              <h3>Konfirmasi Pembayaran</h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowPayModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleManualPayment}>
+              <div className="modal-body">
+                <div className="alert alert-info" style={{ marginBottom: '1rem', padding: '0.75rem', fontSize: '0.85rem' }}>
+                  Silakan transfer senilai <strong>{formatRupiah(payForm.amount)}</strong> ke Rekening Koperasi sebelum mengirim bukti bayar ini. Admin akan segera memverifikasinya.
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nominal Pembayaran (Rp) *</label>
+                  <input type="number" className="form-input"
+                    value={payForm.amount}
+                    onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))}
+                    disabled={payForm.payment_type === 'ANGSURAN_PINJAMAN'}
+                    required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Metode Pembayaran</label>
+                  <select className="form-input" value={payForm.payment_method}
+                          onChange={(e) => setPayForm(p => ({ ...p, payment_method: e.target.value }))}>
+                    <option value="TRANSFER">Transfer Bank Manual</option>
+                    <option value="QRIS">Scan QRIS Koperasi</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Upload Struk / Bukti (PDF/JPG/PNG) *</label>
+                  <input type="file" className="form-input"
+                    accept="image/png, image/jpeg, image/jpg"
+                    onChange={e => setPayForm(f => ({ ...f, proof_file: e.target.files[0] }))}
+                    required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Catatan Tambahan</label>
+                  <textarea className="form-input" rows={2} placeholder="Opsional"
+                    value={payForm.notes}
+                    onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowPayModal(false)}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={payLoading}>
+                    {payLoading ? 'Memproses...' : 'Kirim Bukti'}
+                  </button>
               </div>
             </form>
           </div>

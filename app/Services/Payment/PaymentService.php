@@ -262,7 +262,7 @@ class PaymentService
     /**
      * Process a successful payment: create savings deposit or loan payment
      */
-    private function processSuccessfulPayment(Payment $payment): void
+    public function processSuccessfulPayment(Payment $payment): void
     {
         DB::transaction(function () use ($payment) {
             $payment->update([
@@ -277,8 +277,8 @@ class PaymentService
                 // Process loan installment payment
                 $loanPayment = $this->loanService->processPayment($payment->loan_id, [
                     'payment_date' => now()->toDateString(),
-                    'payment_method' => 'QRIS',
-                    'created_by' => null,
+                    'payment_method' => $payment->metadata['payment_method'] ?? 'QRIS',
+                    'created_by' => $payment->metadata['approved_by'] ?? null,
                 ]);
 
                 Log::info('QRIS loan payment processed', [
@@ -288,13 +288,15 @@ class PaymentService
             } else {
                 // Process savings deposit
                 $savingType = $paymentType->toSavingType();
+                $descMethod = $payment->metadata['payment_method'] ?? 'QRIS';
+                $orderId = $payment->midtrans_order_id ?? $payment->id;
                 $saving = $this->savingService->deposit([
                     'member_id' => $member->id,
                     'type' => $savingType,
                     'amount' => $payment->amount,
                     'date' => now()->toDateString(),
-                    'description' => "Pembayaran via QRIS - {$payment->midtrans_order_id}",
-                    'reference_number' => $payment->midtrans_order_id,
+                    'description' => "Pembayaran via {$descMethod} - {$orderId}",
+                    'reference_number' => $orderId,
                 ]);
 
                 Log::info('QRIS saving deposit processed', [
@@ -303,5 +305,81 @@ class PaymentService
                 ]);
             }
         });
+    }
+
+    /**
+     * Create manual payment (upload proof)
+     */
+    public function createManualPayment(array $data): Payment
+    {
+        $member = Member::findOrFail($data['member_id']);
+        $paymentType = PaymentType::from($data['payment_type']);
+        $amount = (float) $data['amount'];
+
+        $loanId = null;
+        if ($paymentType === PaymentType::ANGSURAN_PINJAMAN) {
+            $loan = Loan::where('id', $data['loan_id'])->where('member_id', $member->id)->firstOrFail();
+            $loanId = $loan->id;
+        }
+
+        $orderId = 'MAN-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
+
+        return Payment::create([
+            'member_id' => $member->id,
+            'payment_type' => $paymentType,
+            'amount' => $amount,
+            'status' => PaymentStatus::PENDING,
+            'midtrans_order_id' => $orderId,
+            'loan_id' => $loanId,
+            'saving_type' => $paymentType->toSavingType(),
+            'metadata' => [
+                'proof_file' => $data['proof_file'] ?? null,
+                'payment_method' => $data['payment_method'] ?? 'TRANSFER', // e.g QRIS (Manual) or TRANSFER
+                'notes' => $data['notes'] ?? null,
+            ],
+        ]);
+    }
+
+    /**
+     * Approve manual payment
+     */
+    public function approveManualPayment(string $paymentId, int $approvedBy): Payment
+    {
+        $payment = Payment::where('id', $paymentId)
+            ->where('status', PaymentStatus::PENDING)
+            ->where('midtrans_order_id', 'like', 'MAN-%')
+            ->firstOrFail();
+
+        $meta = $payment->metadata ?? [];
+        $meta['approved_by'] = $approvedBy;
+        $meta['approved_at'] = now()->toIso8601String();
+        $payment->metadata = $meta;
+        $payment->save();
+
+        $this->processSuccessfulPayment($payment);
+        return $payment;
+    }
+
+    /**
+     * Reject manual payment
+     */
+    public function rejectManualPayment(string $paymentId, string $reason, int $rejectedBy): Payment
+    {
+        $payment = Payment::where('id', $paymentId)
+            ->where('status', PaymentStatus::PENDING)
+            ->where('midtrans_order_id', 'like', 'MAN-%')
+            ->firstOrFail();
+
+        $meta = $payment->metadata ?? [];
+        $meta['rejected_by'] = $rejectedBy;
+        $meta['rejected_at'] = now()->toIso8601String();
+        $meta['reject_reason'] = $reason;
+
+        $payment->update([
+            'status' => PaymentStatus::FAILED,
+            'metadata' => $meta
+        ]);
+
+        return $payment;
     }
 }

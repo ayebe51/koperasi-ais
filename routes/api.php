@@ -4,6 +4,7 @@ use App\Http\Controllers\Accounting\AccountingController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\Export\ExportController;
+use App\Http\Controllers\ExportPdfExcelController;
 use App\Http\Controllers\Loan\LoanController;
 use App\Http\Controllers\Member\MemberController;
 use App\Http\Controllers\Payment\PaymentController;
@@ -168,18 +169,32 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{type}/{id}', [ReceiptController::class, 'show']);
     });
 
-    // ─── Payments (QRIS) ───
+    // ─── Payments (QRIS & Manual) ───
     Route::prefix('payments')->group(function () {
         Route::post('/qris', [PaymentController::class, 'createQris']);
         Route::get('/{id}/status', [PaymentController::class, 'checkStatus']);
         Route::get('/history', [PaymentController::class, 'history']);
+
+        // Manual verification
+        Route::post('/manual', [PaymentController::class, 'submitManualPayment']);
+        Route::get('/verifications', [PaymentController::class, 'listManualVerifications'])
+            ->middleware('role:ADMIN,MANAGER,TELLER');
+        Route::post('/{id}/approve-manual', [PaymentController::class, 'approveManual'])
+            ->middleware('role:ADMIN,MANAGER,TELLER');
+        Route::post('/{id}/reject-manual', [PaymentController::class, 'rejectManual'])
+            ->middleware('role:ADMIN,MANAGER,TELLER');
     });
 
-    // ─── Export (CSV) ───
+    // ─── Export (Umum) ───
     Route::prefix('export')->middleware('role:ADMIN,MANAGER,ACCOUNTANT,TELLER')->group(function () {
+        // Legacy CSV
         Route::get('/members', [ExportController::class, 'members']);
         Route::get('/savings', [ExportController::class, 'savings']);
         Route::get('/loans', [ExportController::class, 'loans']);
+
+        // Excel & PDF
+        Route::get('/{entity}/pdf', [ExportPdfExcelController::class, 'exportPdf']);
+        Route::get('/{entity}/excel', [ExportPdfExcelController::class, 'exportExcel']);
     });
 
     // ─── Portal Anggota (self-service) ───

@@ -23,6 +23,7 @@ import PenjualanPage from './pages/TokoPage/PenjualanPage';
 import LaporanTokoPage from './pages/LaporanPage/LaporanTokoPage';
 import LaporanPembiayaanPage from './pages/LaporanPage/LaporanPembiayaanPage';
 import PembayaranPage from './pages/PembayaranPage/PembayaranPage';
+import VerifikasiPembayaranPage from './pages/PembayaranPage/VerifikasiPembayaranPage';
 import ProfilPage from './pages/ProfilPage/ProfilPage';
 import UserManagementPage from './pages/UserPage/UserManagementPage';
 import SettingsPage from './pages/SettingsPage/SettingsPage';
@@ -74,8 +75,9 @@ export default function App() {
             {/* Simpanan — ADMIN, MANAGER, TELLER */}
             <Route path="simpanan" element={<ProtectedRoute roles={['ADMIN','MANAGER','TELLER']}><SimpananPage /></ProtectedRoute>} />
 
-            {/* Pembayaran QRIS — All authenticated */}
+            {/* Pembayaran QRIS & Manual — All authenticated */}
             <Route path="pembayaran" element={<PembayaranPage />} />
+            <Route path="verifikasi-pembayaran" element={<ProtectedRoute roles={['ADMIN','MANAGER','TELLER']}><VerifikasiPembayaranPage /></ProtectedRoute>} />
 
             {/* Pinjaman — ADMIN, MANAGER, TELLER, ACCOUNTANT */}
             <Route path="pinjaman" element={<ProtectedRoute roles={['ADMIN','MANAGER','TELLER','ACCOUNTANT']}><PinjamanListPage /></ProtectedRoute>} />

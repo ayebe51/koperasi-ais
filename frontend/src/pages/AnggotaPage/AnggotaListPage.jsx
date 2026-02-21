@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api, { downloadExport } from '../../lib/api';
 import { formatDate, statusBadge } from '../../lib/utils';
-import { Users, Plus, Search, ChevronLeft, ChevronRight, Eye, Download, UserPlus, UserCheck } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { FileText, FileSpreadsheet } from 'lucide-react';
 import MemberFormModal from './MemberFormModal';
 import './AnggotaPage.css';
 
@@ -61,10 +61,16 @@ export default function AnggotaListPage() {
           <p className="page-subtitle">Kelola data anggota koperasi</p>
         </div>
         <div className="flex gap-sm">
-          <button className="btn btn-secondary" onClick={async () => {
-            try { await downloadExport('/export/members', {}, `anggota_${new Date().toISOString().slice(0,10)}.csv`); toast.success('Export anggota berhasil!'); }
-            catch { toast.error('Gagal export data anggota'); }
-          }}><Download size={16} /> Export CSV</button>
+          <button className="btn btn-outline btn-sm" onClick={async () => {
+             const url = api.defaults.baseURL.replace('/api', '') + '/api/export/members/excel';
+             window.open(url, '_blank');
+          }}><FileSpreadsheet size={16} /> Excel</button>
+
+          <button className="btn btn-outline btn-sm" onClick={async () => {
+             const url = api.defaults.baseURL.replace('/api', '') + '/api/export/members/pdf';
+             window.open(url, '_blank');
+          }}><FileText size={16} /> PDF</button>
+
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             <Plus size={16} /> Tambah Anggota
           </button>

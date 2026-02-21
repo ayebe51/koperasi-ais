@@ -176,7 +176,7 @@ class MemberPortalController extends Controller
                     'total' => $s->total_amount,
                     'is_paid' => $s->is_paid,
                 ]),
-                'total_paid' => $loan->payments->sum('amount'),
+                'total_paid' => $loan->payments->sum('total_paid'),
             ]);
 
         return $this->success($loans);

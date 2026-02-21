@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api, { downloadExport } from '../../lib/api';
 import { formatRupiah, formatDate, statusBadge } from '../../lib/utils';
-import { Wallet, Plus, Search, ArrowDownCircle, ArrowUpCircle, ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react';
+import { Wallet, Plus, Search, ArrowDownCircle, ArrowUpCircle, ChevronLeft, ChevronRight, Download, Printer, FileText, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import SavingFormModal from './SavingFormModal';
 import ReceiptModal from '../../components/Receipt/ReceiptModal';
@@ -45,10 +45,16 @@ export default function SimpananPage() {
           <p className="page-subtitle">Kelola setoran dan penarikan simpanan anggota</p>
         </div>
         <div className="flex gap-sm">
-          <button className="btn btn-secondary" onClick={async () => {
-            try { await downloadExport('/export/savings', {}, `simpanan_${new Date().toISOString().slice(0,10)}.csv`); toast.success('Export simpanan berhasil!'); }
-            catch { toast.error('Gagal export data simpanan'); }
-          }}><Download size={16} /> Export CSV</button>
+          <button className="btn btn-outline btn-sm" onClick={async () => {
+             const url = api.defaults.baseURL.replace('/api', '') + '/api/export/savings/excel';
+             window.open(url, '_blank');
+          }}><FileSpreadsheet size={16} /> Excel</button>
+
+          <button className="btn btn-outline btn-sm" onClick={async () => {
+             const url = api.defaults.baseURL.replace('/api', '') + '/api/export/savings/pdf';
+             window.open(url, '_blank');
+          }}><FileText size={16} /> PDF</button>
+
           <button className="btn btn-primary" onClick={() => setModalType('deposit')}>
             <ArrowDownCircle size={16} /> Setor
           </button>
@@ -60,7 +66,7 @@ export default function SimpananPage() {
 
       {/* Balance summary */}
       {balances && (
-        <div className="grid grid-3 savings-summary">
+        <div className="grid grid-3 savings-summary mb-4">
           <div className="stat-card teal">
             <div className="stat-icon"><Wallet size={20} /></div>
             <div className="stat-value">{formatRupiah(balances.pokok)}</div>

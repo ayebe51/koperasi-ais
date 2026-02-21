@@ -32,7 +32,7 @@ class LoanController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Loan::with('member');
+        $query = Loan::with('member')->withSum('payments', 'total_paid');
 
         if ($request->has('member_id'))
             $query->where('member_id', $request->member_id);
@@ -132,7 +132,9 @@ class LoanController extends Controller
      */
     public function show(string $id): JsonResponse
     {
-        $loan = Loan::with(['member', 'schedules', 'payments', 'ckpnProvisions', 'documents'])->findOrFail($id);
+        $loan = Loan::with(['member', 'schedules', 'payments', 'ckpnProvisions', 'documents'])
+            ->withSum('payments', 'total_paid')
+            ->findOrFail($id);
 
         return $this->success([
             'loan' => new LoanResource($loan),

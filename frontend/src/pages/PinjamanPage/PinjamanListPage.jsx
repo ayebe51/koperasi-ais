@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api, { downloadExport } from '../../lib/api';
 import { formatRupiah, formatDate, statusBadge } from '../../lib/utils';
-import { Landmark, Search, Eye, ChevronLeft, ChevronRight, Filter, Plus, Download, ShieldAlert } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { FileText, FileSpreadsheet } from 'lucide-react';
 import LoanFormModal from './LoanFormModal';
 
 export default function PinjamanListPage() {
@@ -65,10 +65,17 @@ export default function PinjamanListPage() {
               <ShieldAlert size={16} /> {ckpnLoading ? 'Memproses...' : 'Run CKPN'}
             </button>
           )}
-          <button className="btn btn-secondary" onClick={async () => {
-            try { await downloadExport('/export/loans', {}, `pinjaman_${new Date().toISOString().slice(0,10)}.csv`); toast.success('Export pinjaman berhasil!'); }
-            catch { toast.error('Gagal export data pinjaman'); }
-          }}><Download size={16} /> Export CSV</button>
+
+          <button className="btn btn-outline btn-sm" onClick={async () => {
+             const url = api.defaults.baseURL.replace('/api', '') + '/api/export/loans/excel';
+             window.open(url, '_blank');
+          }}><FileSpreadsheet size={16} /> Excel</button>
+
+          <button className="btn btn-outline btn-sm" onClick={async () => {
+             const url = api.defaults.baseURL.replace('/api', '') + '/api/export/loans/pdf';
+             window.open(url, '_blank');
+          }}><FileText size={16} /> PDF</button>
+
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
             <Plus size={16} /> Ajukan Pinjaman
           </button>

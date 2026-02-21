@@ -10,6 +10,7 @@ use App\Services\Payment\PaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PaymentController extends Controller
 {
@@ -145,6 +146,121 @@ class PaymentController extends Controller
                 'responseCode' => '5005500',
                 'responseMessage' => $e->getMessage(),
             ], 400);
+        }
+    }
+
+    /**
+     * POST /api/payments/manual
+     * Upload manual payment proof
+     */
+    public function submitManualPayment(Request $request): JsonResponse
+    {
+        $request->validate([
+            'payment_type' => 'required|string',
+            'amount' => 'required|numeric|min:1000',
+            'loan_id' => 'nullable|uuid',
+            'payment_method' => 'required|string|in:TRANSFER,QRIS',
+            'proof_image' => 'required|image|max:2048', // max 2MB
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $user = $request->user();
+            $member = $user->member;
+
+            if (!$member) {
+                return $this->error('Akun Anda tidak terhubung dengan data anggota', 403);
+            }
+
+            // Upload the proof image
+            $path = $request->file('proof_image')->store('payment-proofs', 'public');
+
+            $payment = $this->paymentService->createManualPayment([
+                'member_id' => $member->id,
+                'payment_type' => $request->payment_type,
+                'amount' => $request->amount,
+                'loan_id' => $request->loan_id,
+                'payment_method' => $request->payment_method,
+                'proof_file' => $path,
+                'notes' => $request->notes,
+            ]);
+
+            return $this->created([
+                'payment_id' => $payment->id,
+                'order_id' => $payment->midtrans_order_id,
+                'amount' => $payment->amount,
+                'status' => $payment->status->value,
+            ], 'Bukti pembayaran berhasil diunggah dan sedang diproses admin');
+        } catch (\Exception $e) {
+            Log::error('Upload manual payment failed', ['error' => $e->getMessage()]);
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * GET /api/payments/verifications
+     * List manual payments waiting for admin approval
+     */
+    public function listManualVerifications(Request $request): JsonResponse
+    {
+        $query = Payment::with('member')
+            ->where('midtrans_order_id', 'like', 'MAN-%')
+            ->where('status', 'PENDING');
+
+        if ($request->has('search')) {
+            $s = $request->search;
+            $query->whereHas('member', function ($q) use ($s) {
+                $q->where('name', 'like', "%$s%")
+                    ->orWhere('member_number', 'like', "%$s%");
+            });
+        }
+
+        $payments = $query->orderByDesc('created_at')->paginate($request->per_page ?? 15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $payments->items(),
+            'meta' => [
+                'current_page' => $payments->currentPage(),
+                'per_page' => $payments->perPage(),
+                'total' => $payments->total(),
+                'last_page' => $payments->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/payments/{id}/approve-manual
+     */
+    public function approveManual(Request $request, string $id): JsonResponse
+    {
+        try {
+            $payment = $this->paymentService->approveManualPayment($id, $request->user()->id);
+            return $this->success([
+                'payment_id' => $payment->id,
+                'status' => $payment->status->value,
+            ], 'Pembayaran disetujui, bukti transaksi sah dan tercatat');
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * POST /api/payments/{id}/reject-manual
+     */
+    public function rejectManual(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'reason' => 'required|string|max:255',
+        ]);
+        try {
+            $payment = $this->paymentService->rejectManualPayment($id, $request->reason, $request->user()->id);
+            return $this->success([
+                'payment_id' => $payment->id,
+                'status' => $payment->status->value,
+            ], 'Pembayaran ditolak: ' . $request->reason);
+        } catch (\Exception $e) {
+            return $this->error($e->getMessage(), 422);
         }
     }
 }

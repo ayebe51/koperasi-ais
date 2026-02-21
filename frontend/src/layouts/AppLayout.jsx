@@ -20,6 +20,7 @@ const menuItems = [
   { to: '/profil',             icon: UserCircle,      label: 'Akun Saya',             roles: null },
   { to: '/anggota',           icon: Users,           label: 'Keanggotaan',           roles: ['ADMIN','MANAGER','TELLER'] },
   { to: '/simpanan',          icon: Wallet,          label: 'Simpanan',              roles: ['ADMIN','MANAGER','TELLER'] },
+  { to: '/verifikasi-pembayaran', icon: Receipt, label: 'Verifikasi Pembayaran', roles: ['ADMIN','MANAGER','TELLER'], badgeKey: 'payment_verifications' },
   { to: '/pembayaran',        icon: QrCode,          label: 'Pembayaran QRIS',       roles: null },
   { to: '/pinjaman',          icon: Landmark,        label: 'Pinjaman',              roles: ['ADMIN','MANAGER','TELLER','ACCOUNTANT'], badgeKey: 'pinjaman' },
   {
