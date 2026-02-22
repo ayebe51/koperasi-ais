@@ -51,7 +51,7 @@ class ReportController extends Controller
 
         // Stock summary
         $totalProduk = Product::where('is_active', true)->count();
-        $nilaiPersediaan = (float) Product::where('is_active', true)->selectRaw('SUM(stock * avg_cost) as total')->value('total');
+        $nilaiPersediaan = (float) Product::where('is_active', true)->selectRaw('SUM(stock * average_cost) as total')->value('total');
 
         return $this->success([
             'laporan' => 'Laporan Unit Usaha Toko',
@@ -82,10 +82,11 @@ class ReportController extends Controller
         $endDate = $request->get('end_date', now()->toDateString());
 
         // Loan portfolio
-        $pinjamanAktif = Loan::where('status', LoanStatus::ACTIVE)->count();
+        $activeLoans = Loan::where('status', LoanStatus::ACTIVE)->get();
+        $pinjamanAktif = $activeLoans->count();
         $pinjamanLunas = Loan::where('status', LoanStatus::PAID_OFF)->count();
-        $totalOutstanding = (float) Loan::where('status', LoanStatus::ACTIVE)->sum('remaining_balance');
-        $totalPlafon = (float) Loan::where('status', LoanStatus::ACTIVE)->sum('amount');
+        $totalOutstanding = $activeLoans->sum(fn($loan) => $loan->getOutstandingBalance());
+        $totalPlafon = (float) Loan::where('status', LoanStatus::ACTIVE)->sum('principal_amount');
 
         // Payment collection in period
         $payments = LoanPayment::whereBetween('payment_date', [$startDate, $endDate]);
@@ -97,12 +98,9 @@ class ReportController extends Controller
         $pinjamanPending = Loan::where('status', LoanStatus::PENDING)->count();
 
         // NPL (Non Performing Loan) — collectibility >= 3
-        $nplCount = Loan::where('status', LoanStatus::ACTIVE)
-            ->where('collectibility', '>=', 3)
-            ->count();
-        $nplAmount = (float) Loan::where('status', LoanStatus::ACTIVE)
-            ->where('collectibility', '>=', 3)
-            ->sum('remaining_balance');
+        $nplLoans = $activeLoans->filter(fn($loan) => $loan->collectibility->value >= 3);
+        $nplCount = $nplLoans->count();
+        $nplAmount = $nplLoans->sum(fn($loan) => $loan->getOutstandingBalance());
 
         return $this->success([
             'laporan' => 'Laporan Unit Usaha Pembiayaan',

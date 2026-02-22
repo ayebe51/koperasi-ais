@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import api, { downloadExport } from '../../lib/api';
 import { formatDate, statusBadge } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
-import { FileText, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet, Plus, Search, UserCheck, UserPlus, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import MemberFormModal from './MemberFormModal';
 import './AnggotaPage.css';
 
