@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah, formatNumber } from '../../lib/utils';
-import { BarChart3, TrendingUp, Package, DollarSign, ShoppingCart } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, DollarSign, ShoppingCart, Download, Printer } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { exportToCSV } from '../../lib/exportUtils';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
 
@@ -27,6 +28,43 @@ export default function LaporanTokoPage() {
   };
 
   useEffect(() => { fetchReport(); }, []);
+
+  const handleExportExcel = () => {
+    if (!report) return;
+
+    let data = [];
+    const filename = `Laporan_Unit_Toko_${endDate}`;
+
+    // Sales Summary
+    data.push({ Kategori: 'Ringkasan Penjualan', Metrik: '', Nilai: '' });
+    data.push({ Kategori: '', Metrik: 'Jumlah Transaksi', Nilai: report.penjualan.jumlah_transaksi });
+    data.push({ Kategori: '', Metrik: 'Total Penjualan (Rp)', Nilai: report.penjualan.total_penjualan });
+    data.push({ Kategori: '', Metrik: 'Total Diskon (Rp)', Nilai: report.penjualan.total_diskon });
+    data.push({ Kategori: '', Metrik: 'HPP (Rp)', Nilai: report.penjualan.total_hpp });
+    data.push({ Kategori: '', Metrik: 'Laba Kotor (Rp)', Nilai: report.penjualan.laba_kotor });
+    data.push({ Kategori: '', Metrik: 'Margin Profit (%)', Nilai: report.penjualan.margin_persen });
+    data.push({ Kategori: '', Metrik: '', Nilai: '' });
+
+    // Stock Summary
+    data.push({ Kategori: 'Ringkasan Persediaan', Metrik: '', Nilai: '' });
+    data.push({ Kategori: '', Metrik: 'Total Produk Aktif', Nilai: report.persediaan.total_produk_aktif });
+    data.push({ Kategori: '', Metrik: 'Nilai Persediaan (Rp)', Nilai: report.persediaan.nilai_persediaan });
+    data.push({ Kategori: '', Metrik: '', Nilai: '' });
+
+    // Stock Details Table
+    if (report.persediaan.rincian?.length > 0) {
+      data.push({ Kategori: '--- RINCIAN PERGERAKAN STOK ---', Metrik: '', Nilai: '' });
+      report.persediaan.rincian.forEach((stok) => {
+        data.push({
+          Kategori: stok.code,
+          Metrik: stok.name,
+          Nilai: `Stok Tersisa: ${stok.stock} ${stok.unit} | Harga Jual: Rp ${stok.sell_price.toLocaleString('id-ID')} | HPP: Rp ${stok.average_cost.toLocaleString('id-ID')} | Total Nilai Aset: Rp ${stok.total_value.toLocaleString('id-ID')}`
+        });
+      });
+    }
+
+    exportToCSV(data, filename);
+  };
 
   const topChart = report?.produk_terlaris ? {
     labels: report.produk_terlaris.map(p => p.product),
@@ -55,6 +93,14 @@ export default function LaporanTokoPage() {
           <input type="date" className="form-input" style={{ width: 150 }}
             value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn btn-primary btn-sm" onClick={fetchReport}>Tampilkan</button>
+        </div>
+        <div className="flex gap-sm">
+          <button className="btn btn-outline btn-sm no-print" disabled={!report} onClick={handleExportExcel}>
+            <Download size={16} /> Excel
+          </button>
+          <button className="btn btn-secondary btn-sm no-print" disabled={!report} onClick={() => window.print()}>
+            <Printer size={16} /> Cetak
+          </button>
         </div>
       </div>
 
@@ -107,6 +153,42 @@ export default function LaporanTokoPage() {
               </div>
             </div>
           </div>
+
+          {report.persediaan.rincian?.length > 0 && (
+            <div className="card" style={{ marginTop: 'var(--space-lg)' }}>
+              <h4 style={{ marginBottom: 'var(--space-md)' }}>Rincian Pergerakan Stok</h4>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Kode</th>
+                      <th>Nama Barang</th>
+                      <th className="text-right">Sisa Stok</th>
+                      <th className="text-right">Harga Pokok (HPP)</th>
+                      <th className="text-right">Harga Jual</th>
+                      <th className="text-right">Total Nilai Aset (Rp)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.persediaan.rincian.map(stok => (
+                      <tr key={stok.code}>
+                        <td><span className="font-mono">{stok.code}</span></td>
+                        <td><strong>{stok.name}</strong></td>
+                        <td className="text-right">
+                          <span className={`badge badge-${stok.stock > 10 ? 'success' : stok.stock > 0 ? 'warning' : 'danger'}`}>
+                            {formatNumber(stok.stock)} {stok.unit}
+                          </span>
+                        </td>
+                        <td className="text-right font-mono text-muted">{formatRupiah(stok.average_cost)}</td>
+                        <td className="text-right font-mono" style={{ color: 'var(--primary-600)' }}>{formatRupiah(stok.sell_price)}</td>
+                        <td className="text-right font-mono"><strong>{formatRupiah(stok.total_value)}</strong></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

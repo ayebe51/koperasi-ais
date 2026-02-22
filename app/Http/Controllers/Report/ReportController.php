@@ -49,9 +49,21 @@ class ReportController extends Controller
                 'revenue' => round($item->total_revenue, 2),
             ]);
 
-        // Stock summary
-        $totalProduk = Product::where('is_active', true)->count();
-        $nilaiPersediaan = (float) Product::where('is_active', true)->selectRaw('SUM(stock * average_cost) as total')->value('total');
+        // Stock summary & details
+        $activeProducts = Product::where('is_active', true)->get();
+        $totalProduk = $activeProducts->count();
+        $nilaiPersediaan = $activeProducts->sum(fn($p) => $p->stock * $p->average_cost);
+
+        $stockDetails = $activeProducts->map(fn($p) => [
+            'code' => $p->code,
+            'name' => $p->name,
+            'category' => $p->category,
+            'stock' => $p->stock,
+            'unit' => $p->unit,
+            'average_cost' => (float) $p->average_cost,
+            'sell_price' => (float) $p->sell_price,
+            'total_value' => round($p->stock * $p->average_cost, 2),
+        ])->sortByDesc('total_value')->values();
 
         return $this->success([
             'laporan' => 'Laporan Unit Usaha Toko',
@@ -68,6 +80,7 @@ class ReportController extends Controller
             'persediaan' => [
                 'total_produk_aktif' => $totalProduk,
                 'nilai_persediaan' => round($nilaiPersediaan ?? 0, 2),
+                'rincian' => $stockDetails
             ],
         ], 'Laporan Unit Usaha Toko');
     }
@@ -82,7 +95,7 @@ class ReportController extends Controller
         $endDate = $request->get('end_date', now()->toDateString());
 
         // Loan portfolio
-        $activeLoans = Loan::where('status', LoanStatus::ACTIVE)->get();
+        $activeLoans = Loan::with('member')->where('status', LoanStatus::ACTIVE)->get();
         $pinjamanAktif = $activeLoans->count();
         $pinjamanLunas = Loan::where('status', LoanStatus::PAID_OFF)->count();
         $totalOutstanding = $activeLoans->sum(fn($loan) => $loan->getOutstandingBalance());
@@ -101,6 +114,15 @@ class ReportController extends Controller
         $nplLoans = $activeLoans->filter(fn($loan) => $loan->collectibility->value >= 3);
         $nplCount = $nplLoans->count();
         $nplAmount = $nplLoans->sum(fn($loan) => $loan->getOutstandingBalance());
+
+        $nplDetails = $nplLoans->map(fn($loan) => [
+            'loan_number' => $loan->loan_number,
+            'member_name' => $loan->member->name,
+            'member_number' => $loan->member->member_number,
+            'collectibility' => $loan->collectibility->name,
+            'outstanding' => $loan->getOutstandingBalance(),
+            'overdue_days' => $loan->getOverdueDays()
+        ])->sortByDesc('outstanding')->values();
 
         return $this->success([
             'laporan' => 'Laporan Unit Usaha Pembiayaan',
@@ -123,6 +145,7 @@ class ReportController extends Controller
                 'npl_amount' => round($nplAmount, 2),
                 'npl_ratio' => $totalOutstanding > 0
                     ? round(($nplAmount / $totalOutstanding) * 100, 2) : 0,
+                'rincian' => $nplDetails
             ],
         ], 'Laporan Unit Usaha Pembiayaan');
     }

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah, formatNumber } from '../../lib/utils';
-import { Landmark, AlertTriangle, TrendingUp, CreditCard, Users } from 'lucide-react';
+import { Landmark, AlertTriangle, TrendingUp, CreditCard, Users, Download, Printer } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { exportToCSV } from '../../lib/exportUtils';
 
 export default function LaporanPembiayaanPage() {
   const toast = useToast();
@@ -24,6 +25,50 @@ export default function LaporanPembiayaanPage() {
 
   useEffect(() => { fetchReport(); }, []);
 
+  const handleExportExcel = () => {
+    if (!report) return;
+
+    let data = [];
+    const filename = `Laporan_Unit_Pembiayaan_${endDate}`;
+
+    // Portfolio Summary
+    data.push({ Kategori: 'Portfolio Pinjaman', Metrik: '', Nilai: '' });
+    data.push({ Kategori: '', Metrik: 'Pinjaman Aktif', Nilai: report.portfolio.pinjaman_aktif });
+    data.push({ Kategori: '', Metrik: 'Pinjaman Lunas', Nilai: report.portfolio.pinjaman_lunas });
+    data.push({ Kategori: '', Metrik: 'Plafon Aktif (Rp)', Nilai: report.portfolio.total_plafon_aktif });
+    data.push({ Kategori: '', Metrik: 'Total Outstanding (Rp)', Nilai: report.portfolio.total_outstanding });
+    data.push({ Kategori: '', Metrik: '', Nilai: '' });
+
+    // Collection Summary
+    data.push({ Kategori: 'Penagihan Periode', Metrik: '', Nilai: '' });
+    data.push({ Kategori: '', Metrik: 'Jumlah Pembayaran', Nilai: report.penagihan_periode.jumlah_pembayaran });
+    data.push({ Kategori: '', Metrik: 'Pokok Diterima (Rp)', Nilai: report.penagihan_periode.pokok_diterima });
+    data.push({ Kategori: '', Metrik: 'Bunga Diterima (Rp)', Nilai: report.penagihan_periode.bunga_diterima });
+    data.push({ Kategori: '', Metrik: 'Total Diterima (Rp)', Nilai: report.penagihan_periode.total_diterima });
+    data.push({ Kategori: '', Metrik: '', Nilai: '' });
+
+    // NPL summary
+    data.push({ Kategori: 'Kualitas Kredit', Metrik: '', Nilai: '' });
+    data.push({ Kategori: '', Metrik: 'NPL Count', Nilai: report.kualitas_kredit.npl_count });
+    data.push({ Kategori: '', Metrik: 'NPL Amount (Rp)', Nilai: report.kualitas_kredit.npl_amount });
+    data.push({ Kategori: '', Metrik: 'NPL Ratio (%)', Nilai: report.kualitas_kredit.npl_ratio });
+    data.push({ Kategori: '', Metrik: '', Nilai: '' });
+
+    // NPL Details Table
+    if (report.kualitas_kredit.rincian?.length > 0) {
+      data.push({ Kategori: '--- RINCIAN KREDIT BERMASALAH (NPL) ---', Metrik: '', Nilai: '' });
+      report.kualitas_kredit.rincian.forEach(npl => {
+        data.push({
+          Kategori: npl.loan_number,
+          Metrik: `${npl.member_name} (${npl.member_number})`,
+          Nilai: `Sisa: Rp ${npl.outstanding.toLocaleString('id-ID')} | Status: ${npl.collectibility}`
+        });
+      });
+    }
+
+    exportToCSV(data, filename);
+  };
+
   return (
     <div className="page">
       <div className="page-header">
@@ -41,6 +86,14 @@ export default function LaporanPembiayaanPage() {
           <input type="date" className="form-input" style={{ width: 150 }}
             value={endDate} onChange={e => setEndDate(e.target.value)} />
           <button className="btn btn-primary btn-sm" onClick={fetchReport}>Tampilkan</button>
+        </div>
+        <div className="flex gap-sm">
+          <button className="btn btn-outline btn-sm no-print" disabled={!report} onClick={handleExportExcel}>
+            <Download size={16} /> Excel
+          </button>
+          <button className="btn btn-secondary btn-sm no-print" disabled={!report} onClick={() => window.print()}>
+            <Printer size={16} /> Cetak
+          </button>
         </div>
       </div>
 
@@ -104,6 +157,41 @@ export default function LaporanPembiayaanPage() {
               </div>
             </div>
           </div>
+
+          {report.kualitas_kredit.rincian?.length > 0 && (
+            <div className="card" style={{ marginTop: 'var(--space-lg)' }}>
+              <h4 style={{ marginBottom: 'var(--space-md)' }}>Rincian Kredit Bermasalah (NPL)</h4>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>No. Pinjaman</th>
+                      <th>Nama Anggota</th>
+                      <th className="text-right">Sisa Hutang (Rp)</th>
+                      <th>Status Kolektibilitas</th>
+                      <th>Keterlambatan (Hari)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.kualitas_kredit.rincian.map(npl => (
+                      <tr key={npl.loan_number}>
+                        <td><span className="font-mono">{npl.loan_number}</span></td>
+                        <td>
+                          <strong>{npl.member_name}</strong><br />
+                          <small className="text-muted">{npl.member_number}</small>
+                        </td>
+                        <td className="text-right font-mono" style={{ color: 'var(--danger)' }}>
+                          {formatRupiah(npl.outstanding)}
+                        </td>
+                        <td><span className="badge badge-danger">{npl.collectibility}</span></td>
+                        <td>{npl.overdue_days} Hari</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
