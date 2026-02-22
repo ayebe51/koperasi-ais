@@ -28,18 +28,19 @@ class LoanService
     {
         $member = Member::findOrFail($data['member_id']);
 
+        $termMonths = (int) $data['term_months'];
         $monthlyRate = ($data['interest_rate'] / 100) / 12;
         $monthlyPayment = $this->interestEngine->calculateMonthlyPayment(
             $data['principal_amount'],
             $monthlyRate,
-            $data['term_months']
+            $termMonths
         );
 
         $eir = $this->interestEngine->calculateEIR(
             $data['principal_amount'],
             $data['interest_rate'],
             ($data['administration_fee'] ?? 0) + ($data['provision_fee'] ?? 0),
-            $data['term_months']
+            $termMonths
         );
 
         return Loan::create([
@@ -47,14 +48,14 @@ class LoanService
             'member_id' => $data['member_id'],
             'principal_amount' => $data['principal_amount'],
             'interest_rate' => $data['interest_rate'],
-            'term_months' => $data['term_months'],
+            'term_months' => $termMonths,
             'monthly_payment' => $monthlyPayment,
             'effective_interest_rate' => $eir,
             'administration_fee' => $data['administration_fee'] ?? 0,
             'provision_fee' => $data['provision_fee'] ?? 0,
             'amortized_cost' => $data['principal_amount'] - ($data['administration_fee'] ?? 0) - ($data['provision_fee'] ?? 0),
             'loan_date' => $data['loan_date'] ?? now()->toDateString(),
-            'due_date' => now()->addMonths($data['term_months'])->toDateString(),
+            'due_date' => now()->addMonths($termMonths)->toDateString(),
             'purpose' => $data['purpose'] ?? null,
             'status' => LoanStatus::PENDING,
         ]);
