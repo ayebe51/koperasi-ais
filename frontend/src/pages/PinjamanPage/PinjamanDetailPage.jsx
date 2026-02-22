@@ -165,7 +165,7 @@ export default function PinjamanDetailPage() {
             <h4 style={{ marginBottom: 'var(--space-md)' }}>Dokumen Persyaratan</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 'var(--space-sm)' }}>
               {loan.documents.map(doc => (
-                <a key={doc.id} href={`/storage/${doc.file_path}`} target="_blank" rel="noreferrer"
+                <a key={doc.id} href={`${api.defaults.baseURL.replace('/api', '')}/storage/${doc.file_path}`} target="_blank" rel="noreferrer"
                   className="card" style={{ padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', border: '1px solid var(--border)' }}>
                   <div style={{ background: 'var(--bg-muted)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', color: 'var(--brand)' }}>
                     <FileText size={20} />
