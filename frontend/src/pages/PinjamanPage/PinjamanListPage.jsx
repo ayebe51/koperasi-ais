@@ -4,7 +4,7 @@ import api, { downloadExport } from '../../lib/api';
 import { formatRupiah, formatDate, statusBadge } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { FileText, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet, ShieldAlert, Plus, Search, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import LoanFormModal from './LoanFormModal';
 
 export default function PinjamanListPage() {
@@ -131,7 +131,7 @@ export default function PinjamanListPage() {
                     <strong>{loan.member?.name || '-'}</strong>
                     <div className="text-xs text-muted">{loan.member?.member_number}</div>
                   </td>
-                  <td>{formatDate(loan.application_date)}</td>
+                  <td>{formatDate(loan.created_at)}</td>
                   <td className="text-right font-mono">{formatRupiah(loan.principal_amount)}</td>
                   <td className="text-right font-mono">{formatRupiah(loan.remaining_balance)}</td>
                   <td>
