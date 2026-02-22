@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah, formatDate } from '../../lib/utils';
-import { BookOpen, Printer, Search, ArrowDownCircle, ArrowUpCircle, Scale, Hash } from 'lucide-react';
+import { BookOpen, Printer, Search, Download } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { exportToCSV } from '../../lib/exportUtils';
 import './BukuBesarPage.css';
 
 export default function BukuBesarPage() {
@@ -55,6 +56,20 @@ export default function BukuBesarPage() {
   const totalCredit = entries.reduce((s, e) => s + (parseFloat(e.credit) || 0), 0);
   const endingBalance = entries.length > 0 ? (parseFloat(entries[entries.length - 1].balance) || 0) : 0;
 
+  const handleExportExcel = () => {
+    if (!entries.length) return;
+    const data = entries.map(entry => ({
+      Tanggal: formatDate(entry.date || entry.transaction_date),
+      No_Jurnal: entry.entry_number || '-',
+      Keterangan: entry.description || '-',
+      Debit: entry.debit || 0,
+      Kredit: entry.credit || 0,
+      Saldo: entry.balance || 0
+    }));
+    const filename = `Buku_Besar_${selectedAccount?.code}_${startDate}_to_${endDate}`;
+    exportToCSV(data, filename);
+  };
+
   return (
     <div className="page">
       {/* Page Header */}
@@ -100,9 +115,14 @@ export default function BukuBesarPage() {
             <Search size={16} /> {loading ? 'Memuat...' : 'Tampilkan'}
           </button>
           {entries.length > 0 && (
-            <button className="btn btn-ghost no-print" onClick={() => window.print()}>
-              <Printer size={16} /> Cetak
-            </button>
+            <>
+              <button className="btn btn-outline no-print" onClick={handleExportExcel}>
+                <Download size={16} /> Excel
+              </button>
+              <button className="btn btn-ghost no-print" onClick={() => window.print()}>
+                <Printer size={16} /> Cetak
+              </button>
+            </>
           )}
         </div>
       </div>

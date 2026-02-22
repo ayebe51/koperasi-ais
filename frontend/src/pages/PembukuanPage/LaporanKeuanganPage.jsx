@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import { formatRupiah } from '../../lib/utils';
-import { Printer } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
+import { exportToCSV } from '../../lib/exportUtils';
 import './LaporanPage.css';
 
 const REPORT_MAP = {
@@ -41,6 +42,50 @@ export default function LaporanKeuanganPage() {
   };
 
   useEffect(() => { fetchReport(); }, [reportType]);
+
+  const handleExportExcel = () => {
+    if (!report) return;
+
+    let data = [];
+    const filename = `Laporan_${REPORT_MAP[reportType].label.replace(/\s+/g, '_')}_${endDate}`;
+
+    if (reportType === 'neraca') {
+      const pushSection = (label, section) => {
+        data.push({ Kategori: label, Kode: '', Akun: '', Saldo: '' });
+        section?.accounts?.forEach(acc => data.push({ Kategori: '', Kode: acc.code, Akun: acc.name, Saldo: acc.balance }));
+        data.push({ Kategori: `Total ${label}`, Kode: '', Akun: '', Saldo: section?.total || 0 });
+        data.push({ Kategori: '', Kode: '', Akun: '', Saldo: '' });
+      };
+      pushSection('Aset', report.assets);
+      pushSection('Kewajiban', report.liabilities);
+      pushSection('Ekuitas', report.equity);
+    } else if (reportType === 'laba-rugi') {
+      const pushSection = (label, section) => {
+        data.push({ Kategori: label, Kode: '', Akun: '', Saldo: '' });
+        section?.accounts?.forEach(acc => data.push({ Kategori: '', Kode: acc.code, Akun: acc.name, Saldo: acc.balance }));
+        data.push({ Kategori: `Total ${label}`, Kode: '', Akun: '', Saldo: section?.total || 0 });
+        data.push({ Kategori: '', Kode: '', Akun: '', Saldo: '' });
+      };
+      pushSection('Pendapatan', report.revenue);
+      pushSection('Beban', report.expenses);
+      data.push({ Kategori: 'Sisa Hasil Usaha (SHU)', Kode: '', Akun: '', Saldo: report.net_shu || 0 });
+    } else if (reportType === 'arus-kas') {
+      data = [
+        { Keterangan: 'Penerimaan Kas (Inflow)', Saldo: report.total_cash_inflow || 0 },
+        { Keterangan: 'Pengeluaran Kas (Outflow)', Saldo: report.total_cash_outflow || 0 },
+        { Keterangan: 'Arus Kas Bersih', Saldo: report.net_cash_flow || 0 },
+      ];
+    } else if (reportType === 'buku-besar') {
+      data = report.accounts?.map(acc => ({
+        Kode: acc.code,
+        Akun: acc.name,
+        Debit: acc.debit_balance || 0,
+        Kredit: acc.credit_balance || 0
+      })) || [];
+    }
+
+    exportToCSV(data, filename);
+  };
 
   /* ──────────── Account list helper ──────────── */
   const renderAccountRows = (accounts) => {
@@ -223,9 +268,14 @@ export default function LaporanKeuanganPage() {
           <h1 className="page-title">Laporan Keuangan</h1>
           <p className="page-subtitle">Neraca, Laba Rugi, dan Arus Kas</p>
         </div>
-        <button className="btn btn-secondary no-print" disabled={!report} onClick={() => window.print()}>
-          <Printer size={16} /> Cetak
-        </button>
+        <div className="flex gap-sm">
+          <button className="btn btn-outline no-print" disabled={!report} onClick={handleExportExcel}>
+            <Download size={16} /> Excel
+          </button>
+          <button className="btn btn-secondary no-print" disabled={!report} onClick={() => window.print()}>
+            <Printer size={16} /> Cetak
+          </button>
+        </div>
       </div>
 
       {/* Report selector */}

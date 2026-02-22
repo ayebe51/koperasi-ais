@@ -35,6 +35,7 @@ class LoanSchedule extends Model
             'ending_balance' => 'decimal:2',
             'paid_amount' => 'decimal:2',
             'is_paid' => 'boolean',
+            'reminder_sent_at' => 'datetime',
         ];
     }
 
