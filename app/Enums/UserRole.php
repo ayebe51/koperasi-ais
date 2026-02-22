@@ -9,4 +9,5 @@ enum UserRole: string
     case TELLER = 'TELLER';
     case ACCOUNTANT = 'ACCOUNTANT';
     case MEMBER = 'MEMBER';
+    case CHAIRMAN = 'CHAIRMAN';
 }

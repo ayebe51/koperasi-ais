@@ -29,6 +29,7 @@ class SettingsController extends Controller
         'persentase_shu_pendidikan' => 5,
         'persentase_shu_sosial' => 5,
         'persentase_shu_pengurus' => 12.5,
+        'multi_level_approval_threshold' => 50000000,
     ];
 
     /**
@@ -63,6 +64,7 @@ class SettingsController extends Controller
             'persentase_shu_pendidikan' => 'required|numeric|min:0|max:100',
             'persentase_shu_sosial' => 'required|numeric|min:0|max:100',
             'persentase_shu_pengurus' => 'required|numeric|min:0|max:100',
+            'multi_level_approval_threshold' => 'required|numeric|min:0',
         ]);
 
         Cache::forever(self::CACHE_KEY, $validated);

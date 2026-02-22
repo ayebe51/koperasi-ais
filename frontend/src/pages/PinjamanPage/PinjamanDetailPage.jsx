@@ -95,7 +95,8 @@ export default function PinjamanDetailPage() {
           </div>
         </div>
         <div className="flex gap-sm">
-          {loan.status === 'PENDING' && isRole('ADMIN', 'MANAGER') && (
+          {((loan.status === 'PENDING' && isRole('ADMIN', 'MANAGER')) ||
+            (loan.status === 'WAITING_CHAIRMAN_APPROVAL' && isRole('ADMIN', 'CHAIRMAN'))) && (
             <>
               <button className="btn btn-primary" onClick={handleApprove}>
                 <CheckCircle size={14} /> Setujui
@@ -118,7 +119,12 @@ export default function PinjamanDetailPage() {
         <div className="card">
           <h4 style={{ marginBottom: 'var(--space-lg)' }}>Informasi Pinjaman</h4>
           <div className="info-rows">
-            <div className="info-row"><span>Status</span><span className={`badge badge-${statusBadge(loan.status)}`}>{loan.status}</span></div>
+            <div className="info-row">
+              <span>Status</span>
+              <span className={`badge badge-${statusBadge(loan.status)}`}>
+                {loan.status === 'WAITING_CHAIRMAN_APPROVAL' ? 'Menunggu Ketua' : loan.status}
+              </span>
+            </div>
             {loan.status === 'REJECTED' && loan.rejection_reason && (
               <div className="info-row"><span>Alasan Penolakan</span><strong style={{ color: 'var(--danger)' }}>{loan.rejection_reason}</strong></div>
             )}
@@ -129,6 +135,12 @@ export default function PinjamanDetailPage() {
             <div className="info-row"><span>Tgl Pengajuan</span><strong>{formatDate(loan.created_at)}</strong></div>
             <div className="info-row"><span>Tgl Pencairan</span><strong>{formatDate(loan.loan_date) || '-'}</strong></div>
             <div className="info-row"><span>Kolektibilitas</span><strong>{loan.collectibility || '-'}</strong></div>
+            {loan.manager_approved_at && (
+              <div className="info-row"><span>Disetujui Manajer</span><strong>{formatDate(loan.manager_approved_at)}</strong></div>
+            )}
+            {loan.chairman_approved_at && (
+              <div className="info-row"><span>Disetujui Ketua</span><strong>{formatDate(loan.chairman_approved_at)}</strong></div>
+            )}
           </div>
         </div>
 

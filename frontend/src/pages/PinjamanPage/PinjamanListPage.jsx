@@ -91,7 +91,8 @@ export default function PinjamanListPage() {
         <select className="form-input form-select" style={{ width: 160 }}
           value={status} onChange={e => { setStatus(e.target.value); setPage(1); fetchLoans(1, search, e.target.value); }}>
           <option value="">Semua Status</option>
-          <option value="PENDING">Pending</option>
+          <option value="PENDING">Pending (Manajer)</option>
+          <option value="WAITING_CHAIRMAN_APPROVAL">Menunggu Ketua</option>
           <option value="APPROVED">Approved</option>
           <option value="ACTIVE">Aktif</option>
           <option value="PAID_OFF">Lunas</option>
@@ -133,7 +134,11 @@ export default function PinjamanListPage() {
                   <td>{formatDate(loan.application_date)}</td>
                   <td className="text-right font-mono">{formatRupiah(loan.principal_amount)}</td>
                   <td className="text-right font-mono">{formatRupiah(loan.remaining_balance)}</td>
-                  <td><span className={`badge badge-${statusBadge(loan.status)}`}>{loan.status}</span></td>
+                  <td>
+                    <span className={`badge badge-${statusBadge(loan.status)}`}>
+                      {loan.status === 'WAITING_CHAIRMAN_APPROVAL' ? 'Menunggu Ketua' : loan.status}
+                    </span>
+                  </td>
                   <td>
                     <Link to={`/pinjaman/${loan.id}`} className="btn btn-ghost btn-sm btn-icon" title="Detail">
                       <Eye size={16} />

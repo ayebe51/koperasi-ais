@@ -13,6 +13,8 @@ use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Saving;
+use App\Models\User;
+use App\Enums\UserRole;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -21,6 +23,17 @@ class DemoSeeder extends Seeder
     public function run(): void
     {
         $this->command->info('🌱 Seeding demo data...');
+
+        // ─── Users ───
+        User::firstOrCreate(
+            ['email' => 'ketua@koperasi.com'],
+            [
+                'name' => 'Ketua Koperasi',
+                'password' => bcrypt('password'),
+                'role' => UserRole::CHAIRMAN,
+            ]
+        );
+        $this->command->info("  ✓ Chairman user (ketua@koperasi.com)");
 
         // ─── Members ───
         $memberData = [

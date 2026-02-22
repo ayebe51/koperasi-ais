@@ -63,21 +63,58 @@ class LoanService
     /**
      * Approve loan and generate amortization schedule + journal entries
      */
-    public function approveLoan(string $loanId, int $approvedBy): Loan
+    public function approveLoan(string $loanId, int $approvedBy, ?bool $isChairman = false): Loan
     {
         $loan = Loan::with('member')->findOrFail($loanId);
+        $settings = \Illuminate\Support\Facades\Cache::get('koperasi_settings', []);
+        $threshold = $settings['multi_level_approval_threshold'] ?? 50000000;
 
-        if ($loan->status !== LoanStatus::PENDING) {
-            throw new InvalidArgumentException('Loan is not in PENDING status');
+        if (!in_array($loan->status, [LoanStatus::PENDING, LoanStatus::WAITING_CHAIRMAN_APPROVAL])) {
+            throw new InvalidArgumentException('Loan status cannot be approved at this stage');
         }
 
-        return DB::transaction(function () use ($loan, $approvedBy) {
-            // Update loan status
-            $loan->update([
+        return DB::transaction(function () use ($loan, $approvedBy, $isChairman, $threshold) {
+
+            // Scenario 1: Pending loan requires chairman approval (Plafon > Threshold)
+            // UPDATE: As requested by user, ALL loans require Chairman approval now.
+            if ($loan->status === LoanStatus::PENDING && !$isChairman) {
+                // If it's already a Chairman approving directly from PENDING, they can bypass manager level or they approve as chairman.
+                // Assuming normal flow: Manager approves first.
+                $loan->update([
+                    'status' => LoanStatus::WAITING_CHAIRMAN_APPROVAL,
+                    'manager_approved_by' => $approvedBy,
+                    'manager_approved_at' => now(),
+                ]);
+
+                if ($loan->member && $loan->member->user_id) {
+                    \App\Models\Notification::create([
+                        'user_id' => $loan->member->user_id,
+                        'type' => 'LOAN_WAITING_CHAIRMAN',
+                        'title' => 'Pinjaman Menunggu Persetujuan Ketua',
+                        'message' => "Pengajuan pinjaman Anda dengan nomor {$loan->loan_number} telah disetujui Manajer dan sedang menunggu persetujuan Ketua.",
+                        'data' => ['loan_id' => $loan->id, 'loan_number' => $loan->loan_number],
+                    ]);
+                }
+
+                return $loan; // Stop here, no schedule/journal yet
+            }
+
+            // Scenario 2: Final Approval (Either Plafon <= Threshold OR already Waiting for Chairman)
+            $updateData = [
                 'status' => LoanStatus::ACTIVE,
-                'approved_by' => $approvedBy,
+                'approved_by' => $approvedBy, // Final approver
                 'approved_at' => now(),
-            ]);
+            ];
+
+            if ($loan->status === LoanStatus::WAITING_CHAIRMAN_APPROVAL) {
+                $updateData['chairman_approved_by'] = $approvedBy;
+                $updateData['chairman_approved_at'] = now();
+            } else {
+                $updateData['manager_approved_by'] = $approvedBy;
+                $updateData['manager_approved_at'] = now();
+            }
+
+            $loan->update($updateData);
 
             if ($loan->member && $loan->member->user_id) {
                 \App\Models\Notification::create([

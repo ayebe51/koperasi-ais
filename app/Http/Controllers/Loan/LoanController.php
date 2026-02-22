@@ -65,8 +65,12 @@ class LoanController extends Controller
     public function approve(Request $request, string $id): JsonResponse
     {
         try {
-            $loan = $this->loanService->approveLoan($id, $request->user()->id);
-            return $this->success(new LoanResource($loan), 'Pinjaman disetujui dan jadwal angsuran dibuat');
+            $user = $request->user();
+            $loan = $this->loanService->approveLoan($id, $user->id, $user->isChairman() || $user->isAdmin());
+            $message = $loan->status->value === 'WAITING_CHAIRMAN_APPROVAL'
+                ? 'Pinjaman disetujui Manajer dan menunggu persetujuan Ketua'
+                : 'Pinjaman disetujui dan jadwal angsuran dibuat';
+            return $this->success(new LoanResource($loan), $message);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 422);
         }
@@ -83,8 +87,8 @@ class LoanController extends Controller
             'rejection_reason' => 'nullable|string|max:500'
         ]);
 
-        if ($loan->status->value !== 'PENDING') {
-            return $this->error('Hanya pinjaman PENDING yang bisa ditolak', 422);
+        if (!in_array($loan->status->value, ['PENDING', 'WAITING_CHAIRMAN_APPROVAL'])) {
+            return $this->error('Hanya pinjaman PENDING atau WAITING CHAIRMAN yang bisa ditolak', 422);
         }
 
         $loan->update([
