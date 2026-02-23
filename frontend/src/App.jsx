@@ -17,6 +17,7 @@ import COAPage from './pages/PembukuanPage/COAPage';
 import JurnalPage from './pages/PembukuanPage/JurnalPage';
 import BukuBesarPage from './pages/PembukuanPage/BukuBesarPage';
 import LaporanKeuanganPage from './pages/PembukuanPage/LaporanKeuanganPage';
+import BankReconciliationPage from './pages/PembukuanPage/BankReconciliationPage';
 import SHUPage from './pages/SHUPage/SHUPage';
 import ProdukPage from './pages/TokoPage/ProdukPage';
 import PenjualanPage from './pages/TokoPage/PenjualanPage';
@@ -88,6 +89,7 @@ export default function App() {
             <Route path="pembukuan/jurnal" element={<ProtectedRoute roles={['ADMIN','MANAGER','ACCOUNTANT']}><JurnalPage /></ProtectedRoute>} />
             <Route path="pembukuan/buku-besar" element={<ProtectedRoute roles={['ADMIN','MANAGER','ACCOUNTANT']}><BukuBesarPage /></ProtectedRoute>} />
             <Route path="pembukuan/laporan" element={<ProtectedRoute roles={['ADMIN','MANAGER','ACCOUNTANT']}><LaporanKeuanganPage /></ProtectedRoute>} />
+            <Route path="pembukuan/rekon-bank" element={<ProtectedRoute roles={['ADMIN','ACCOUNTANT']}><BankReconciliationPage /></ProtectedRoute>} />
 
             {/* SHU — ADMIN, MANAGER, ACCOUNTANT */}
             <Route path="shu" element={<ProtectedRoute roles={['ADMIN','MANAGER','ACCOUNTANT']}><SHUPage /></ProtectedRoute>} />

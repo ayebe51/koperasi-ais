@@ -30,6 +30,7 @@ const menuItems = [
       { to: '/pembukuan/jurnal',      label: 'Jurnal Umum' },
       { to: '/pembukuan/buku-besar',  label: 'Buku Besar' },
       { to: '/pembukuan/laporan',     label: 'Laporan Keuangan' },
+      { to: '/pembukuan/rekon-bank',  label: 'Rekonsiliasi Bank' },
     ],
   },
   { to: '/shu',               icon: Calculator,      label: 'SHU',                   roles: ['ADMIN','MANAGER','ACCOUNTANT'] },

@@ -124,6 +124,13 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('role:ADMIN,MANAGER,ACCOUNTANT');
         Route::get('/reports/cash-flow', [AccountingController::class, 'cashFlow'])
             ->middleware('role:ADMIN,MANAGER,ACCOUNTANT');
+        // Reconciliation
+        Route::get('/reconciliation', [\App\Http\Controllers\Accounting\BankReconciliationController::class, 'index'])
+            ->middleware('role:ADMIN,ACCOUNTANT');
+        Route::post('/reconciliation/upload', [\App\Http\Controllers\Accounting\BankReconciliationController::class, 'upload'])
+            ->middleware('role:ADMIN,ACCOUNTANT');
+        Route::post('/reconciliation/{id}/reconcile', [\App\Http\Controllers\Accounting\BankReconciliationController::class, 'reconcile'])
+            ->middleware('role:ADMIN,ACCOUNTANT');
     });
 
     // ─── Store ───
