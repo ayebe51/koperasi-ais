@@ -54,14 +54,11 @@ class BankStatementParser
             switch (strtoupper($bankType)) {
                 case 'BCA':
                     // BCA Format (Approximate): Date, Description, Branch, Amount, Type, Balance
-                    // Example: "21/02","KREDIT DARI BP","0000","100000.00","CR","150000.00"
-
                     $dateRaw = $row[0] ?? ''; // DD/MM
                     $description = $row[1] ?? '';
                     $amountRaw = $row[3] ?? '0';
                     $typeRaw = $row[4] ?? ''; // CR or DB
 
-                    // Handle date (assume current year if only DD/MM)
                     if (strlen($dateRaw) <= 5) {
                         $date = Carbon::createFromFormat('d/m', $dateRaw)->setYear(now()->year);
                     } else {
@@ -80,13 +77,73 @@ class BankStatementParser
                         'reference_id' => md5($dateRaw . $description . $amountRaw . ($row[5] ?? ''))
                     ];
 
+                case 'MANDIRI':
+                    // Mandiri MCM Format: Date, Description, Amount, Type (CR/DB), Balance
+                    $dateRaw = $row[0] ?? '';
+                    $description = $row[1] ?? '';
+                    $amountRaw = $row[2] ?? '0';
+                    $typeRaw = $row[3] ?? '';
+
+                    $amount = (float) str_replace([',', '.'], ['', ''], $amountRaw) / 100; // Assuming no decimals in raw if using separator
+                    if (str_contains($amountRaw, '.'))
+                        $amount = (float) str_replace(',', '', $amountRaw);
+
+                    $type = (strtoupper($typeRaw) === 'CR' || strtoupper($typeRaw) === 'K') ? 'CREDIT' : 'DEBIT';
+
+                    return [
+                        'transaction_date' => Carbon::parse($dateRaw)->toDateString(),
+                        'description' => $description,
+                        'amount' => $amount,
+                        'type' => $type,
+                        'bank_name' => 'Mandiri',
+                        'reference_id' => md5($dateRaw . $description . $amountRaw)
+                    ];
+
+                case 'BNI':
+                    // BNI Format: Date, Description, Debit, Credit, Balance
+                    $dateRaw = $row[0] ?? '';
+                    $description = $row[1] ?? '';
+                    $debit = (float) str_replace(',', '', $row[2] ?? 0);
+                    $credit = (float) str_replace(',', '', $row[3] ?? 0);
+
+                    $amount = $credit > 0 ? $credit : $debit;
+                    $type = $credit > 0 ? 'CREDIT' : 'DEBIT';
+
+                    return [
+                        'transaction_date' => Carbon::parse($dateRaw)->toDateString(),
+                        'description' => $description,
+                        'amount' => $amount,
+                        'type' => $type,
+                        'bank_name' => 'BNI',
+                        'reference_id' => md5($dateRaw . $description . $amount)
+                    ];
+
+                case 'BRI':
+                    // BRI Format: Date, Description, Amount, Type (D/K)
+                    $dateRaw = $row[0] ?? '';
+                    $description = $row[1] ?? '';
+                    $amountRaw = $row[2] ?? '0';
+                    $typeRaw = $row[3] ?? '';
+
+                    $amount = (float) str_replace(',', '', $amountRaw);
+                    $type = (strtoupper($typeRaw) === 'K' || strtoupper($typeRaw) === 'CREDIT') ? 'CREDIT' : 'DEBIT';
+
+                    return [
+                        'transaction_date' => Carbon::parse($dateRaw)->toDateString(),
+                        'description' => $description,
+                        'amount' => $amount,
+                        'type' => $type,
+                        'bank_name' => 'BRI',
+                        'reference_id' => md5($dateRaw . $description . $amountRaw)
+                    ];
+
                 default:
                     // Default generic parser
                     return [
                         'transaction_date' => Carbon::parse($row[0] ?? now())->toDateString(),
                         'description' => $row[1] ?? '',
-                        'amount' => (float) ($row[2] ?? 0),
-                        'type' => (strtoupper($row[3] ?? '') === 'K' || strtoupper($row[3] ?? '') === 'CREDIT') ? 'CREDIT' : 'DEBIT',
+                        'amount' => (float) str_replace(',', '', $row[2] ?? 0),
+                        'type' => (strtoupper($row[3] ?? '') === 'K' || strtoupper($row[3] ?? '') === 'CREDIT' || strtoupper($row[3] ?? '') === 'CR') ? 'CREDIT' : 'DEBIT',
                         'bank_name' => $bankType,
                         'reference_id' => null
                     ];

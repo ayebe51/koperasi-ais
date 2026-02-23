@@ -144,6 +144,18 @@ export default function BankReconciliationPage() {
                 onClick={() => setBankType('BCA')}
               >BCA</div>
               <div
+                className={`chip ${bankType === 'MANDIRI' ? 'active' : ''}`}
+                onClick={() => setBankType('MANDIRI')}
+              >Mandiri</div>
+              <div
+                className={`chip ${bankType === 'BNI' ? 'active' : ''}`}
+                onClick={() => setBankType('BNI')}
+              >BNI</div>
+              <div
+                className={`chip ${bankType === 'BRI' ? 'active' : ''}`}
+                onClick={() => setBankType('BRI')}
+              >BRI</div>
+              <div
                 className={`chip ${bankType === 'GENERIC' ? 'active' : ''}`}
                 onClick={() => setBankType('GENERIC')}
               >Umum</div>
