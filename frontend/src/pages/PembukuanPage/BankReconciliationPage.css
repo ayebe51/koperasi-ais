@@ -210,3 +210,6 @@
     grid-template-areas: "date desc amount" "sugg sugg actions";
   }
 }
+
+.hidden { display: none !important; }
+
