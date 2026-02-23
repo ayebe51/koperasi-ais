@@ -1,0 +1,211 @@
+/* ══════════ Bank Reconciliation Premium UI ══════════ */
+
+.recon-page {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header & Intro */
+.recon-header {
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+  padding: var(--space-xl);
+  border-radius: var(--radius-lg);
+  color: white;
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.recon-header::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.recon-header h2 { margin: 0; font-weight: 700; color: white; }
+.recon-header p { opacity: 0.9; margin-top: var(--space-xs); font-size: 0.95rem; }
+
+/* Upload Area */
+.upload-container {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+
+.upload-zone {
+  background: var(--bg-card);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  box-shadow: 0 0 0 rgba(109, 40, 217, 0);
+  animation: pulse-glow 3s infinite;
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(109, 40, 217, 0.2); }
+  70% { box-shadow: 0 0 0 15px rgba(109, 40, 217, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(109, 40, 217, 0); }
+}
+
+.upload-zone:hover, .upload-zone.dragging {
+  border-color: var(--primary-500);
+  background: var(--primary-50);
+  transform: scale(1.01);
+}
+
+.upload-icon {
+  width: 64px;
+  height: 64px;
+  background: var(--primary-100);
+  color: var(--primary-600);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+  transition: transform 0.3s ease;
+}
+
+.upload-zone:hover .upload-icon {
+  transform: translateY(-5px);
+}
+
+.upload-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.bank-selector {
+  margin-top: var(--space-md);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.chip {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip.active {
+  background: var(--primary-500);
+  color: white;
+  border-color: var(--primary-500);
+}
+
+/* Mutation Table/List */
+.mutation-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.mutation-item {
+  display: grid;
+  grid-template-columns: 120px 1fr 180px 250px 80px;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-light);
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.mutation-item:hover {
+  background: var(--bg-light);
+}
+
+.mutation-date { font-family: var(--font-mono); font-weight: 600; color: var(--text-secondary); }
+.mutation-desc { padding-right: var(--space-md); }
+.mutation-amount { text-align: right; font-family: var(--font-mono); font-size: 1.1rem; }
+.mutation-amount.credit { color: var(--success-600); }
+.mutation-amount.debit { color: var(--danger-600); }
+
+/* Suggestions */
+.suggestion-box {
+  background: linear-gradient(to right, var(--primary-50), white);
+  border: 1px solid var(--primary-100);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.suggestion-box::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--primary-500);
+}
+
+.match-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  background: var(--success-500);
+  color: white;
+}
+
+/* Empty State */
+.empty-state {
+  padding: 60px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  color: var(--text-muted);
+}
+
+.empty-state-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--bg-light);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  color: var(--border-strong);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .upload-container { grid-template-columns: 1fr; }
+  .mutation-item {
+    grid-template-columns: 100px 1fr 150px;
+    grid-template-areas: "date desc amount" "sugg sugg actions";
+  }
+}

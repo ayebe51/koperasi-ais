@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../lib/api';
-import { formatRupiah, formatNumber } from '../../lib/utils';
+import { formatRupiah } from '../../lib/utils';
 import { useToast } from '../../contexts/ToastContext';
-import { Upload, CheckCircle, AlertCircle, XCircle, Search, FileText, ChevronRight, Info } from 'lucide-react';
-import './LaporanPage.css'; // Reuse table and card styles
+import {
+  Upload, CheckCircle, XCircle, FileText,
+  HelpCircle, ArrowRight, Zap
+} from 'lucide-react';
+import './BankReconciliationPage.css';
 
 export default function BankReconciliationPage() {
   const toast = useToast();
+  const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [mutations, setMutations] = useState([]);
   const [pagination, setPagination] = useState({});
   const [page, setPage] = useState(1);
   const [bankType, setBankType] = useState('BCA');
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [dragging, setDragging] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
 
   useEffect(() => {
@@ -32,13 +36,15 @@ export default function BankReconciliationPage() {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    e.preventDefault();
-    if (!selectedFile) return;
+  const onFileSelect = (file) => {
+    if (!file) return;
+    handleUpload(file);
+  };
 
+  const handleUpload = async (file) => {
     setUploadLoading(true);
     const formData = new FormData();
-    formData.append('file', selectedFile);
+    formData.append('file', file);
     formData.append('bank_type', bankType);
 
     try {
@@ -46,7 +52,6 @@ export default function BankReconciliationPage() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       toast.success('File mutasi berhasil diunggah.');
-      setSelectedFile(null);
       setPage(1);
       fetchMutations();
     } catch (err) {
@@ -84,165 +89,154 @@ export default function BankReconciliationPage() {
     }
   };
 
+  const onDragOver = (e) => { e.preventDefault(); setDragging(true); };
+  const onDragLeave = () => { setDragging(false); };
+  const onDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files?.[0]) onFileSelect(e.dataTransfer.files[0]);
+  };
+
   return (
-    <div className="page">
-      <div className="page-header">
-        <h2 className="page-title">Rekonsiliasi Bank</h2>
-      </div>
-
-      <div className="grid grid-3" style={{ marginBottom: 'var(--space-lg)' }}>
-        <div className="card col-span-2">
-          <h4>Upload Mutasi Bank (CSV)</h4>
-          <p className="text-muted" style={{ marginBottom: 'var(--space-md)' }}>
-            Unggah file CSV mutasi dari Internet Banking untuk mencocokkan transaksi otomatis.
-          </p>
-          <form className="flex flex-col gap-md" onSubmit={handleFileUpload}>
-            <div className="flex gap-md items-center">
-              <select
-                className="form-input"
-                style={{ width: 150 }}
-                value={bankType}
-                onChange={e => setBankType(e.target.value)}
-              >
-                <option value="BCA">KlikBCA (CSV)</option>
-                <option value="GENERIC">Format Umum</option>
-              </select>
-              <input
-                type="file"
-                accept=".csv,.txt"
-                className="form-input"
-                onChange={e => setSelectedFile(e.target.files[0])}
-              />
-              <button
-                className="btn btn-primary"
-                disabled={!selectedFile || uploadLoading}
-              >
-                {uploadLoading ? 'Memproses...' : <><Upload size={18} /> Unggah Mutasi</>}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="card">
-          <div className="flex items-start gap-md">
-            <div className="stat-icon purple" style={{ padding: 'var(--space-sm)' }}>
-              <Info size={24} />
-            </div>
-            <div>
-              <h4 style={{ margin: 0 }}>Cara Kerja</h4>
-              <ol className="text-muted" style={{ paddingLeft: 'var(--space-lg)', marginTop: 'var(--space-xs)' }}>
-                <li>Pilih format Bank</li>
-                <li>Upload file CSV mutasi</li>
-                <li>Sistem mencocokkan nominal</li>
-                <li>Klik Konfirmasi atau Abaikan</li>
-              </ol>
-            </div>
+    <div className="page recon-page">
+      <div className="recon-header">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2>Rekonsiliasi Bank</h2>
+            <p>Sinkronkan transaksi rekening koran dengan pembukuan internal Koperasi.</p>
+          </div>
+          <div className="flex gap-sm">
+            <Zap size={24} className="text-yellow-400" />
+            <span className="font-semibold text-white">Fase 2: AI Automatch</span>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <div className="flex justify-between items-center" style={{ marginBottom: 'var(--space-md)' }}>
-          <h3 style={{ margin: 0 }}>Daftar Mutasi Pending</h3>
-          <div className="text-muted">Total: {pagination.total || 0} Transaksi</div>
+      <div className="upload-container">
+        <div
+          className={`upload-zone ${dragging ? 'dragging' : ''}`}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="upload-icon">
+            {uploadLoading ? <div className="spinner" /> : <Upload size={32} />}
+          </div>
+          <h3>{uploadLoading ? 'Memproses File...' : 'Klik atau Seret Rekening Koran ke Sini'}</h3>
+          <p className="text-muted">Mendukung format CSV dan TXT dari Internet Banking</p>
+
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={(e) => onFileSelect(e.target.files[0])}
+          />
         </div>
 
-        {loading ? <div className="page-loading"><div className="spinner" /></div> : (
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Keterangan</th>
-                  <th className="text-right">Nominal</th>
-                  <th>Saran Kecocokan</th>
-                  <th className="text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mutations.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-xl">
-                      <div className="flex flex-col items-center gap-sm text-muted">
-                        <CheckCircle size={48} opacity={0.2} />
-                        Semua mutasi telah direkonsiliasi atau belum ada data.
-                      </div>
-                    </td>
-                  </tr>
-                ) : mutations.map(m => (
-                  <tr key={m.id}>
-                    <td style={{ verticalAlign: 'top' }}>
-                      <span className="font-mono">{new Date(m.transaction_date).toLocaleDateString('id-ID')}</span>
-                    </td>
-                    <td style={{ maxWidth: 300, fontSize: '0.875rem' }}>
-                      <div className="text-muted">{m.description}</div>
-                      <span className={`badge badge-${m.type === 'CREDIT' ? 'success' : 'danger'}`} style={{ marginTop: 'var(--space-xs)' }}>
-                        {m.type === 'CREDIT' ? 'CR (Masuk)' : 'DB (Keluar)'}
-                      </span>
-                    </td>
-                    <td className="text-right font-mono" style={{ verticalAlign: 'top' }}>
-                      <strong>{formatRupiah(m.amount)}</strong>
-                    </td>
-                    <td>
-                      {m.suggestions?.length > 0 ? (
-                        <div className="flex flex-col gap-xs">
-                          {m.suggestions.map((s, idx) => (
-                            <div key={idx} className="flex flex-col gap-xs p-xs border rounded-sm bg-light">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs font-semibold text-primary">{s.label}</span>
-                                <span className={`badge badge-${s.confidence === 'HIGH' ? 'success' : 'warning'}`} style={{ fontSize: '0.6rem' }}>
-                                  {s.confidence} MATCH
-                                </span>
-                              </div>
-                              <button
-                                className="btn btn-primary btn-xs"
-                                onClick={() => handleReconcile(m.id, s.type, s.id)}
-                              >
-                                Cocokkan & Simpan
-                              </button>
-                            </div>
-                          ))}
+        <div className="card">
+          <h4>Konfigurasi</h4>
+          <div className="form-group" style={{ marginTop: 'var(--space-md)' }}>
+            <label className="form-label">Format Bank</label>
+            <div className="bank-selector">
+              <div
+                className={`chip ${bankType === 'BCA' ? 'active' : ''}`}
+                onClick={() => setBankType('BCA')}
+              >BCA</div>
+              <div
+                className={`chip ${bankType === 'GENERIC' ? 'active' : ''}`}
+                onClick={() => setBankType('GENERIC')}
+              >Umum</div>
+            </div>
+          </div>
+          <hr style={{ margin: 'var(--space-md) 0' }} />
+          <div className="flex items-center gap-sm text-xs text-muted">
+            <HelpCircle size={14} />
+            <span>Ekspor mutasi dari CMS Bank ke format CSV untuk hasil terbaik.</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="mutation-card">
+        <div className="flex justify-between items-center p-lg border-b">
+          <h3 style={{ margin: 0 }} className="flex items-center gap-sm">
+            <FileText size={20} className="text-primary-500" />
+            Daftar Mutasi Tertunda
+          </h3>
+          <span className="badge badge-info">{pagination.total || 0} Menunggu</span>
+        </div>
+
+        {loading ? (
+          <div className="page-loading"><div className="spinner" /></div>
+        ) : mutations.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <CheckCircle size={40} />
+            </div>
+            <h3>Pekerjaan Selesai!</h3>
+            <p>Tidak ada mutasi baru yang perlu direkonsiliasi saat ini.</p>
+          </div>
+        ) : (
+          <div className="mutation-list">
+            {mutations.map(m => (
+              <div key={m.id} className="mutation-item">
+                <div className="mutation-date">{new Date(m.transaction_date).toLocaleDateString('id-ID')}</div>
+                <div className="mutation-desc">
+                  <div className="font-semibold text-sm">{m.description}</div>
+                  <span className={`badge badge-${m.type === 'CREDIT' ? 'success' : 'danger'}`} style={{ fontSize: '0.65rem' }}>
+                    {m.type === 'CREDIT' ? 'DANA MASUK' : 'DANA KELUAR'}
+                  </span>
+                </div>
+                <div className={`mutation-amount ${m.type === 'CREDIT' ? 'credit' : 'debit'}`}>
+                  {formatRupiah(m.amount)}
+                </div>
+                <div className="mutation-suggestions">
+                  {m.suggestions?.length > 0 ? (
+                    <div className="suggestion-box">
+                      {m.suggestions.map((s, idx) => (
+                        <div key={idx} className="flex flex-col gap-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="match-badge">{s.confidence} Match</span>
+                            <ArrowRight size={12} className="text-primary-400" />
+                          </div>
+                          <span className="text-xs font-bold truncate" title={s.label}>{s.label}</span>
+                          <button
+                            className="btn btn-primary btn-xs"
+                            onClick={() => handleReconcile(m.id, s.type, s.id)}
+                            style={{ width: '100%', marginTop: 4 }}
+                          >
+                            Konfirmasi
+                          </button>
                         </div>
-                      ) : (
-                        <span className="text-muted italic">Tidak ada saran otomatis</span>
-                      )}
-                    </td>
-                    <td className="text-center" style={{ verticalAlign: 'top' }}>
-                      <button
-                        className="btn btn-ghost btn-danger btn-sm"
-                        title="Abaikan"
-                        onClick={() => handleIgnore(m.id)}
-                      >
-                        <XCircle size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted italic text-xs">Pencarian manual...</span>
+                  )}
+                </div>
+                <div className="text-center">
+                  <button
+                    className="btn btn-ghost btn-sm text-danger"
+                    onClick={() => handleIgnore(m.id)}
+                    title="Abaikan"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
         {pagination.last_page > 1 && (
-          <div className="flex justify-center gap-sm mt-lg">
-            <button
-              className="btn btn-outline btn-sm"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-            >
-              Prev
-            </button>
+          <div className="flex justify-center gap-sm p-lg border-t">
+            <button className="btn btn-outline btn-sm" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</button>
             <span className="flex items-center text-sm px-md">Halaman {page} dari {pagination.last_page}</span>
-            <button
-              className="btn btn-outline btn-sm"
-              disabled={page === pagination.last_page}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </button>
+            <button className="btn btn-outline btn-sm" disabled={page === pagination.last_page} onClick={() => setPage(page + 1)}>Next</button>
           </div>
         )}
       </div>
     </div>
   );
 }
+
